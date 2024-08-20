@@ -1,0 +1,20 @@
+{
+  "name": "scalemaileditorlairoftheravenfork",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.25.3",
+    "@babel/types": "^7.25.2",
+    "recast": "^0.23.9"
+  }
+}

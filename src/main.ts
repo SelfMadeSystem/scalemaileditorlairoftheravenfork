@@ -1,20 +1,28 @@
 /*
-  Scalemail Inlay Designer v2
-  Developed by Anthony Edmonds for Lair of the Raven Ltd
-  Copyright Lair of the Raven Ltd 2017
-*/
+ * Scalemail Inlay Designer v3
+ * Developed by Anthony Edmonds for Lair of the Raven Ltd
+ * Ported to TypeScript and continued development by SelfMadeSystem
+ *
+ * Copyright Lair of the Raven Ltd 2017
+ * Copyright SelfMadeSystem 2024
+ */
+
+import "./style.css";
+import ImageLoader from "./ImageLoader";
+import Entity from "./Entity";
+import { ColourPalette, PaletteColour } from "./Palette";
+import { Swatch } from "./Swatch";
 
 // Variables ==========================================================================================================
 // Assets
-var imageAssets = new imageLoader();
-var imagePath = "images/";
+const imageAssets = new ImageLoader(startDesigner);
 
 // Canvases
-var backgroundLayer = new entityLayer();
-var editorLayer = new entityLayer();
+var backgroundLayer = new EntityLayer();
+var editorLayer = new EntityLayer();
 var interactionLayer;
-var uiLayer = new entityLayer();
-var photoLayer = new entityLayer();
+var uiLayer = new EntityLayer();
+var photoLayer = new EntityLayer();
 
 var canvasCenterX = 0;
 var canvasCenterY = 0;
@@ -45,7 +53,7 @@ var pageLimit = 30;
 
 var browserHistory;
 
-var saveLayer = new entityLayer();
+var saveLayer = new EntityLayer();
 
 var allowedCharacters = new RegExp("^[a-z0-9 _-]+$");
 
@@ -75,11 +83,11 @@ var panMouse = false;
 var panKey = false;
 
 // Overlay Variables
-var overlay = new overlayInterface();
+var overlay = new OverlayInterface();
 var splashText;
 
 // Palette Variables
-var palette = new colourPalette("mainPalette");
+var palette = new ColourPalette();
 var activeColour = 2;
 
 var gradientSheen;
@@ -87,7 +95,7 @@ var gradientShiny;
 var textureBrushed;
 
 // Pattern Variables
-var editorPattern = new patternMatrix();
+var editorPattern = new PatternMatrix();
 
 // Ruler Variables
 var rulerUnits = "metric";
@@ -134,6 +142,9 @@ var scaleOffsetX = 0;
 var scaleOffsetY = 0;
 var scaleOffsetR = 0;
 
+var scaleOffsetXDouble = 0;
+var scaleOffsetXHalf = 0;
+
 var scaleHeightPx = 0;
 var scaleHeightPxHalf = 0;
 var scaleHeightPxQuarter = 0;
@@ -150,16 +161,16 @@ var scaleRatioWide = 0.609022556;
 var scaleRatioHigh = 1.641975309;
 
 // Swatch Variables
-var swatches = new templateSwatches();
+var swatches = new TemplateSwatches();
 var drawEmpty = true;
 
 // Theme Variables
-var themeLibrary = new themeSet();
+var themeLibrary = new ThemeSet();
 var theme = 0;
 
 // UI Variables
-var uiToolbox = new uiSection();
-var uiCamera = new uiSection();
+var uiToolbox = new UiSection();
+var uiCamera = new UiSection();
 
 var uiOffsetX = 15;
 var uiOffsetY = 15;
@@ -168,46 +179,8 @@ var uiIconSize = 30;
 var currentTool = "toolboxCursor";
 
 // Objects ============================================================================================================
-// Entity
-function entity() {
-  this.id = "";
-  this.object = false;
-  this.shape = "";
-
-  this.mouse = false;
-  this.mouseClick = false;
-  this.mouseHover = false;
-  this.mousePointer = false;
-
-  this.fill = false;
-  this.fillColour = "";
-  this.fillOrder = "nonzero";
-  this.fillPalette = 0;
-
-  this.stroke = false;
-  this.strokeColour = "";
-  this.strokeWeight = 0;
-
-  this.imagesrc = "";
-  this.imageClipX = false;
-  this.imageClipY = false;
-
-  this.tooltip = false;
-  this.tooltipText = "";
-  this.tooltipFlip = false;
-
-  this.originX = 0;
-  this.originY = 0;
-  this.height = 0;
-  this.width = 0;
-
-  this.textAlign = "";
-  this.textString = "";
-  this.textType = 0;
-}
-
 // Interface
-function uiSection() {
+function UiSection() {
   this.name = "";
   this.buttons = [];
 
@@ -279,7 +252,7 @@ function uiSection() {
   };
 }
 
-function uiButton() {
+function UiButton() {
   this.name = "";
   this.group = "";
   this.subbuttons = [];
@@ -302,7 +275,7 @@ function uiButton() {
     if (ox === undefined) ox = 0;
     if (oy === undefined) oy = 0;
 
-    nEnt = new entity();
+    nEnt = new Entity();
     nEnt.id = this.name;
     nEnt.object = this;
     nEnt.shape = "image";
@@ -349,7 +322,7 @@ function uiButton() {
     var y = this.helptext.length;
 
     for (x = 0; x < y; x++) {
-      sEnt = new entity();
+      sEnt = new Entity();
       sEnt.id = "help-" + x;
       sEnt.shape = "text";
 
@@ -370,106 +343,8 @@ function uiButton() {
   };
 }
 
-// Image Loader
-function imageLoader() {
-  this.list = [
-    // Toolbox
-    ["iconNew", "iconNew.png"],
-    ["iconOpen", "iconOpen.png"],
-    ["iconSave", "iconSave.png"],
-    ["iconSettings", "iconSettings.png"],
-
-    ["iconBrush", "iconBrush.png"],
-    ["iconColumnCopy", "iconColumnCopy.png"],
-    ["iconColumnInsert", "iconColumnInsert.png"],
-    ["iconColumnPaste", "iconColumnPaste.png"],
-    ["iconColumnRemove", "iconColumnRemove.png"],
-    ["iconCursor", "iconCursor.png"],
-    ["iconFillColour", "iconFillColour.png"],
-    ["iconFillColumn", "iconFillColumn.png"],
-    ["iconFillRow", "iconFillRow.png"],
-    ["iconFlip", "iconFlip.png"],
-    ["iconKickstarter", "iconKickstarter.png"],
-    ["iconReplace", "iconReplace.png"],
-    ["iconRowCopy", "iconRowCopy.png"],
-    ["iconRowInsert", "iconRowInsert.png"],
-    ["iconRowPaste", "iconRowPaste.png"],
-    ["iconRowRemove", "iconRowRemove.png"],
-    ["iconShare", "iconShare.png"],
-
-    // Camera
-    ["iconZoomIn", "iconZoomIn.png"],
-    ["iconZoomOut", "iconZoomOut.png"],
-    ["iconCenter", "iconCenter.png"],
-    ["iconExtents", "iconExtents.png"],
-    ["iconReset", "iconReset.png"],
-    ["iconPan", "iconPan.png"],
-    ["iconHelp", "iconHelp.png"],
-    ["iconCamera", "iconCamera.png"],
-
-    // Overlay
-    ["newShape", "buttonNew.png"],
-    ["newImage", "buttonImage.png"],
-
-    ["shapeSquare", "shapeSquare.png"],
-    ["shapeDiamond", "shapeDiamond.png"],
-
-    // Textures
-    ["textureBrushed", "textureBrushed2.jpg"],
-  ];
-
-  this.loadedImages = [];
-  this.totalLoaded = 0;
-
-  /* Image Loading */
-  this.loadImages = function () {
-    var x = 0;
-    var y = this.list.length;
-
-    for (x = 0; x < y; x++) {
-      this.loadImage(this.list[x][0], this.list[x][1]);
-    }
-  };
-
-  this.loadImage = function (id, src) {
-    var img = new Image();
-
-    addEvent(img, "load", function () {
-      imageAssets.loadComplete();
-    });
-
-    img.id = id;
-    img.src = imagePath + src;
-
-    this.loadedImages.push(img);
-  };
-
-  this.loadComplete = function () {
-    this.totalLoaded++;
-
-    if (this.totalLoaded == this.list.length) {
-      startDesigner();
-    }
-  };
-
-  /* Image Retrieval */
-  this.getImage = function (id) {
-    var x = 0;
-    var y = this.loadedImages.length;
-
-    for (x = 0; x < y; x++) {
-      if (this.loadedImages[x].id == id) {
-        return this.loadedImages[x];
-      }
-    }
-
-    console.log("Unable to load " + id);
-    return false;
-  };
-}
-
 // Layer
-function entityLayer() {
+function EntityLayer() {
   this.canvas;
   this.context;
   this.entities = [];
@@ -664,7 +539,7 @@ function entityLayer() {
 
       this.redrawQueueTimer = setTimeout(function () {
         that.redrawCanvas();
-        redrawQueueTimer = false;
+        this.redrawQueueTimer = false;
       }, updateInterval);
     }
   };
@@ -706,7 +581,7 @@ function entityLayer() {
 }
 
 // Overlay
-function overlayInterface() {
+function OverlayInterface() {
   this.background;
   this.loading;
   this.pane;
@@ -757,12 +632,12 @@ function overlayInterface() {
   };
 }
 
-function overlayScreen() {
+function OverlayScreen() {
   this.id = "";
   this.title = "";
 
-  this.bar = new overlayPane();
-  this.pane = new overlayPane();
+  this.bar = new OverlayPane();
+  this.pane = new OverlayPane();
 
   this.addObjectToBar = function (object) {
     this.bar.addObject(object);
@@ -773,7 +648,7 @@ function overlayScreen() {
   };
 }
 
-function overlayPane() {
+function OverlayPane() {
   this.objects = [];
 
   this.addObject = function (object) {
@@ -781,7 +656,7 @@ function overlayPane() {
   };
 }
 
-function overlayObject() {
+function OverlayObject() {
   this.type = "";
   this.id = "";
 
@@ -815,139 +690,9 @@ function overlayObject() {
 }
 
 // Palette
-function colourPalette(id) {
-  this.id = id;
-  this.colours = [];
-
-  /* Change Colours */
-  this.addColour = function (colour) {
-    this.colours.push(colour);
-  };
-
-  /* Check textures */
-  this.isShiny = function (colour) {
-    if (this.colours[colour].shiny === true) {
-      return true;
-    }
-
-    return false;
-  };
-
-  this.isBrushed = function (colour) {
-    if (this.colours[colour].brushed === true) {
-      return true;
-    }
-
-    return false;
-  };
-
-  /* Check RGBA Range Match */
-  this.matchRGBA = function (r, g, b, a) {
-    var x = 0;
-    var y = this.colours.length;
-
-    var distance = 0;
-    var closest = [1, 255];
-
-    for (x = 2; x < y; x++) {
-      distance =
-        Math.abs(r - this.colours[x].r) +
-        Math.abs(g - this.colours[x].g) +
-        Math.abs(b - this.colours[x].b) +
-        Math.abs(a - this.colours[x].a);
-
-      if (distance < closest[1]) {
-        closest = [x, distance];
-      }
-    }
-
-    return closest[0];
-  };
-
-  /* Manage Counts */
-  this.addCount = function (target) {
-    this.colours[target].count++;
-  };
-
-  this.colourInformation = function () {
-    var info = [];
-
-    var x = 0;
-    var y = this.colours.length;
-
-    for (x = 2; x < y; x++) {
-      info.push([this.colours[x].name, this.colours[x].count]);
-    }
-
-    return info;
-  };
-
-  this.countColours = function (target) {
-    var x = 0;
-    var y = 0;
-
-    var tH = target.height;
-    var tW = target.width;
-
-    this.clearCount();
-
-    for (y = 0; y < tH; y++) {
-      for (x = 0; x < tW; x++) {
-        this.addCount(target.getColour(y, x));
-      }
-    }
-  };
-
-  this.clearCount = function (target) {
-    if (target === undefined) target = false;
-
-    if (target === false) {
-      var x = 0;
-      var y = this.colours.length;
-
-      for (x = 0; x < y; x++) {
-        this.colours[x].count = 0;
-      }
-    } else {
-      this.colours[target].count = 0;
-    }
-  };
-
-  this.highestCount = function () {
-    var highest = [0, -1];
-
-    var x = 0;
-    var y = this.colours.length;
-
-    for (x = 1; x < y; x++) {
-      if (this.colours[x].count > highest[1]) {
-        highest = [x, this.colours[x].count];
-      }
-    }
-
-    return highest[0];
-  };
-}
-
-function paletteColour() {
-  this.id = "";
-  this.name = "";
-  this.count = 0;
-
-  this.brushed = false;
-  this.plastic = false;
-  this.shiny = false;
-
-  this.r = 0;
-  this.g = 0;
-  this.b = 0;
-  this.a = 0;
-  this.hex = "";
-}
 
 // Pattern
-function patternMatrix(id) {
-  this.id = id;
+function PatternMatrix() {
   this.matrix = [];
 
   this.height = 0;
@@ -1136,7 +881,7 @@ function patternMatrix(id) {
     if (colour === undefined) colour = activeColour;
 
     try {
-      this.matrix[row].splice(column, 0, new scale(colour));
+      this.matrix[row].splice(column, 0, new Scale(colour));
     } catch (err) {
       console.log("Add Scale - That matrix position doesn't exist!");
     }
@@ -1208,7 +953,7 @@ function patternMatrix(id) {
     if (this.matrix[row].length === 0) {
       // Create Scales
       for (x = 0; x < y; x++) {
-        this.matrix[row].push(new scale(colour));
+        this.matrix[row].push(new Scale(colour));
       }
     } else {
       for (x = 0; x < y; x++) {
@@ -1255,7 +1000,7 @@ function patternMatrix(id) {
       var y = this.matrix.length;
 
       for (x = 0; x < y; x++) {
-        this.matrix[x].splice(position, 0, new scale(colour));
+        this.matrix[x].splice(position, 0, new Scale(colour));
 
         if (position == 0 && this.matrix[x][1].colour == 0) {
           this.matrix[x][0].colour = 0;
@@ -1377,7 +1122,7 @@ function patternMatrix(id) {
   };
 }
 
-function scale(colour) {
+function Scale(colour) {
   this.colour = colour;
 
   this.setColour = function (colour) {
@@ -1392,7 +1137,7 @@ function scale(colour) {
 }
 
 // Swatches
-function templateSwatches() {
+function TemplateSwatches() {
   this.gradientSwatches = [];
   this.textureSwatches = [];
   this.scaleSwatches = [];
@@ -1433,22 +1178,17 @@ function templateSwatches() {
     this.patternSwatch = this.generateSwatch("patternSwatch-" + x);
   };
 
-  this.generateSwatch = function (id) {
-    if (id === undefined) id = "";
-
-    var newSwatch = new swatch();
-
-    newSwatch.canvas = document.createElement("canvas");
-    newSwatch.context = newSwatch.canvas.getContext("2d");
-
-    newSwatch.id = id;
+  this.generateSwatch = function (id: string) {
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d")!;
+    var newSwatch = new Swatch(id, canvas, context);
 
     //document.body.appendChild(newSwatch.canvas);
 
     return newSwatch;
   };
 
-  this.scaleSwatch = function (swt, height, width) {
+  this.scaleSwatch = function (swt: Swatch, height: number, width: number) {
     swt.height = height;
     swt.width = width;
 
@@ -1617,14 +1357,18 @@ function templateSwatches() {
     }
   };
 
-  this.generateTextureSwatch = function (swatch, alphaMod) {
-    var pattern;
-
+  this.generateTextureSwatch = function (swatch: Swatch, alphaMod: number) {
     swatch.context.globalAlpha = alphaMod;
-    swatch.context.drawImage(imageAssets.getImage("textureBrushed"), 0, 0);
+    const img = imageAssets.getImage("textureBrushed");
+    if (img) {
+      swatch.context.drawImage(img, 0, 0);
+    } else {
+      swatch.context.fillStyle = "rgba(255, 0, 0, 1)"; // obvious colour for debugging
+      swatch.context.fillRect(0, 0, swatch.width, swatch.height);
+    }
 
-    pattern = swatch.context.createPattern(swatch.canvas, "no-repeat");
-    swatch.pattern = pattern;
+    const pattern = swatch.context.createPattern(swatch.canvas, "no-repeat");
+    swatch.pattern = pattern ?? undefined;
   };
 
   /* Gradient Functions */
@@ -1640,7 +1384,7 @@ function templateSwatches() {
     }
   };
 
-  this.generateGradientSwatch = function (swatch, rgbaMod) {
+  this.generateGradientSwatch = function (swatch: Swatch, rgbaMod: number) {
     var gradient = swatch.context.createLinearGradient(0, 0, swatch.width, 0);
 
     gradient.addColorStop(
@@ -1709,82 +1453,6 @@ function templateSwatches() {
 
     swatch.gradient = gradient;
   };
-}
-
-function swatch() {
-  this.canvas;
-  this.context;
-
-  this.colourRGBA = "";
-  this.brushed = false;
-  this.gradient;
-  this.height = 0;
-  this.name = "";
-  this.palette = 0;
-  this.pattern;
-  this.shiny = false;
-  this.type = "";
-  this.width = 0;
-}
-
-// Themes
-function themeSet() {
-  this.themes = [];
-
-  this.generateThemes = function () {
-    var newTheme;
-
-    // Dark
-    newTheme = new themeStyle();
-
-    newTheme.id = "dark";
-
-    newTheme.fontColour = "#ffffff";
-
-    newTheme.backgroundColour = "#171717";
-    newTheme.dotColour = "#9c9c9c";
-    newTheme.overlayColour = "#4e4e4e";
-
-    newTheme.toggleColour = "#e8e8e8";
-    newTheme.paletteColour = "#ffffff";
-
-    newTheme.logoColour = "White";
-
-    this.themes.push(newTheme);
-
-    // Light
-    newTheme = new themeStyle();
-
-    newTheme.id = "light";
-
-    newTheme.fontColour = "#000000";
-
-    newTheme.backgroundColour = "#e8e8e8";
-    newTheme.dotColour = "#636363";
-    newTheme.overlayColour = "#b1b1b1";
-
-    newTheme.toggleColour = "#171717";
-    newTheme.paletteColour = "#000000";
-
-    newTheme.logoColour = "Black";
-
-    this.themes.push(newTheme);
-  };
-}
-
-function themeStyle() {
-  this.id = "";
-
-  this.fontColour = "";
-
-  this.backgroundColour = "";
-  this.dotColour = "";
-  this.overlayColour = "";
-
-  this.toggleColour = "";
-  this.paletteColour = "";
-
-  this.logoColour = "";
 }
 
 // General Functions ====================================================================================================
@@ -2279,9 +1947,7 @@ function loadGallery() {
   searchPage = 0;
 }
 
-function galleryResponse(response, mode) {
-  if (mode === undefined) mode = false;
-
+function galleryResponse(response, mode = false) {
   if (mode === false) {
     response = JSON.parse(response);
     searchResults = response;
@@ -2523,7 +2189,7 @@ var itpSampleSpacingY = 0;
 var sampleWidthArea = 0;
 var sampleHeightArea = 0;
 
-var itpPattern = new patternMatrix();
+var itpPattern = new PatternMatrix();
 var itpPatternWidth = 0;
 var itpPatternHeight = 0;
 
@@ -3107,7 +2773,6 @@ function mouseHandler(event) {
                     break;
 
                   case "mousemove":
-
                     mouseHoverEditor(y, x, event.which);
                     break;
                 }
@@ -3307,10 +2972,10 @@ function mouseUpEditor(y, x, b) {
 }
 
 function mouseHoverEditor(y, x, b) {
-  if (b === 1){
+  if (b === 1) {
     switch (currentTool) {
       case "toolboxBrush":
-        console.log(y, x, b)
+        console.log(y, x, b);
         setCursor("Brush");
         if (clicked) {
           editorPattern.colourScale(y, x, activeColour, true);
@@ -4098,13 +3763,13 @@ function buildOverlays() {
   var nObject;
 
   // Create New
-  nWindow = new overlayScreen();
+  nWindow = new OverlayScreen();
   nWindow.id = "new";
   nWindow.title = "Create New Pattern";
 
   // Bar
   // New from Shape
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "button";
   nObject.title = "New from Shape...";
@@ -4114,7 +3779,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // New from Image
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "button";
   nObject.title = "New from Image...";
@@ -4125,7 +3790,7 @@ function buildOverlays() {
 
   // Pane
   // Information
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
   nObject.title = "Scalemail Designer";
@@ -4139,14 +3804,14 @@ function buildOverlays() {
   overlay.addScreen(nWindow);
 
   // New from Shape
-  nWindow = new overlayScreen();
+  nWindow = new OverlayScreen();
   nWindow.id = "newShape";
   nWindow.title = "New from Shape";
 
   // Bar
   // Select Shape
   // Title
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
   nObject.title = "Select Shape";
@@ -4154,7 +3819,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4162,7 +3827,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Radio Button (Square)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputRadio";
   nObject.id = "shapeSquare";
@@ -4178,7 +3843,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Radio Button (Diamond)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputRadio";
   nObject.id = "shapeDiamond";
@@ -4193,7 +3858,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
@@ -4201,7 +3866,7 @@ function buildOverlays() {
 
   // Pattern Settings
   // Title
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
   nObject.title = "Pattern Settings";
@@ -4209,7 +3874,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4217,7 +3882,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Width
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputNumber";
   nObject.id = "o-Width";
@@ -4229,7 +3894,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Height
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputNumber";
   nObject.id = "o-Height";
@@ -4241,7 +3906,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Colours
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "dropdown";
   nObject.id = "o-Colour";
@@ -4253,14 +3918,14 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4268,7 +3933,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Previous Button
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputButton";
   nObject.id = "o-Prev";
@@ -4281,7 +3946,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Create Button
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputButton";
 
@@ -4293,7 +3958,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
@@ -4301,7 +3966,7 @@ function buildOverlays() {
 
   // Pane
   // Information
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -4319,13 +3984,13 @@ function buildOverlays() {
 
   // New from Image
   // Selection
-  nWindow = new overlayScreen();
+  nWindow = new OverlayScreen();
   nWindow.id = "newImageSelect";
   nWindow.title = "New from Image";
 
   // Bar
   // Title
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
   nObject.title = "Select Image";
@@ -4333,7 +3998,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4341,7 +4006,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // File Select
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputFile";
   nObject.id = "o-File";
@@ -4353,14 +4018,14 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
   nWindow.addObjectToBar(nObject);
 
   // Information
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -4374,7 +4039,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4382,7 +4047,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Previous Button
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputButton";
   nObject.id = "o-Prev";
@@ -4395,7 +4060,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Next Button
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputButton";
   nObject.id = "o-Next";
@@ -4408,7 +4073,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
@@ -4416,7 +4081,7 @@ function buildOverlays() {
 
   // Pane
   // Canvas
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "canvas";
   nObject.id = "oCanvas";
@@ -4426,13 +4091,13 @@ function buildOverlays() {
   overlay.addScreen(nWindow);
 
   // Pattern
-  nWindow = new overlayScreen();
+  nWindow = new OverlayScreen();
   nWindow.id = "newImagePattern";
   nWindow.title = "Configure Pattern";
 
   // Bar
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4440,7 +4105,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Pattern Width
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputNumber";
   nObject.id = "o-Width";
@@ -4453,14 +4118,14 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
   nWindow.addObjectToBar(nObject);
 
   // Title
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -4473,7 +4138,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4481,7 +4146,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Previous Button
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputButton";
   nObject.id = "o-Prev";
@@ -4494,7 +4159,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Next Button
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputButton";
   nObject.id = "o-Next";
@@ -4507,7 +4172,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
@@ -4515,7 +4180,7 @@ function buildOverlays() {
 
   // Pane
   // Canvas
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "canvas";
   nObject.id = "oCanvas";
@@ -4525,7 +4190,7 @@ function buildOverlays() {
   overlay.addScreen(nWindow);
 
   // Swap Colours
-  nWindow = new overlayScreen();
+  nWindow = new OverlayScreen();
   nWindow.id = "swapPalette";
   nWindow.title = "Swap Colours";
 
@@ -4533,7 +4198,7 @@ function buildOverlays() {
 
   // Pane
   // Canvas
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "canvas";
   nObject.id = "oCanvas";
@@ -4543,13 +4208,13 @@ function buildOverlays() {
   overlay.addScreen(nWindow);
 
   // Open
-  nWindow = new overlayScreen();
+  nWindow = new OverlayScreen();
   nWindow.id = "open";
   nWindow.title = "Browse Gallery";
 
   // Bar
   // Heading
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -4562,7 +4227,7 @@ function buildOverlays() {
 
   // Title
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4570,7 +4235,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Title
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputText";
   nObject.id = "loadTitle";
@@ -4581,7 +4246,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
@@ -4589,7 +4254,7 @@ function buildOverlays() {
 
   // Author
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4597,7 +4262,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Author
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputText";
   nObject.id = "loadAuthor";
@@ -4608,7 +4273,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
@@ -4616,7 +4281,7 @@ function buildOverlays() {
 
   // Scales
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4624,7 +4289,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Minimum
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputNumber";
   nObject.id = "loadMin";
@@ -4635,7 +4300,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Maximum
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputNumber";
   nObject.id = "loadMax";
@@ -4647,7 +4312,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
@@ -4655,7 +4320,7 @@ function buildOverlays() {
 
   // Order
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4663,7 +4328,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Title A - Z
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputRadio";
   nObject.id = "loadTitleAZ";
@@ -4675,7 +4340,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Title Z - A
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputRadio";
   nObject.id = "loadTitleZA";
@@ -4687,14 +4352,14 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4702,7 +4367,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Author A - Z
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputRadio";
   nObject.id = "loadAuthorAZ";
@@ -4714,7 +4379,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Author Z - A
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputRadio";
   nObject.id = "loadAuthorZA";
@@ -4726,14 +4391,14 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4741,7 +4406,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Scales 0 - 9
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputRadio";
   nObject.id = "loadScales09";
@@ -4753,7 +4418,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Scales 9 - 0
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputRadio";
   nObject.id = "loadAuthorZA";
@@ -4765,14 +4430,14 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4780,7 +4445,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Date New - Old
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputRadio";
   nObject.id = "loadDateAZ";
@@ -4793,7 +4458,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Date Old - New
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputRadio";
   nObject.id = "loadDateZA";
@@ -4805,7 +4470,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
@@ -4813,7 +4478,7 @@ function buildOverlays() {
 
   // Search
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4821,7 +4486,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Submit
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputButton";
   nObject.id = "loadButton";
@@ -4834,7 +4499,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
@@ -4852,13 +4517,13 @@ function buildOverlays() {
   overlay.addScreen(nWindow);
 
   // Save
-  nWindow = new overlayScreen();
+  nWindow = new OverlayScreen();
   nWindow.id = "save";
   nWindow.title = "Save Pattern";
 
   // Bar
   // Title
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -4867,7 +4532,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4875,7 +4540,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Title Input
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputText";
   nObject.id = "oTitle";
@@ -4887,14 +4552,14 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4902,7 +4567,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Author Input
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputText";
   nObject.id = "oAuthor";
@@ -4914,14 +4579,14 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4929,7 +4594,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Password Input
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputPassword";
   nObject.id = "oPassword";
@@ -4940,14 +4605,14 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4955,7 +4620,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Title Input
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputCheckbox";
   nObject.id = "oPrivate";
@@ -4966,14 +4631,14 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
   nObject.state = 1;
@@ -4981,7 +4646,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Title Input
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputButton";
   nObject.id = "oSave";
@@ -4995,7 +4660,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "inputWrapper";
 
@@ -5003,7 +4668,7 @@ function buildOverlays() {
 
   // Pane
   // Title Information
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -5014,7 +4679,7 @@ function buildOverlays() {
   nWindow.addObjectToPane(nObject);
 
   // Author Information
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -5025,7 +4690,7 @@ function buildOverlays() {
   nWindow.addObjectToPane(nObject);
 
   // Password Information
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -5040,7 +4705,7 @@ function buildOverlays() {
   nWindow.addObjectToPane(nObject);
 
   // Gallery Information
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -5055,12 +4720,12 @@ function buildOverlays() {
   overlay.addScreen(nWindow);
 
   // Settings
-  nWindow = new overlayScreen();
+  nWindow = new OverlayScreen();
   nWindow.id = "settings";
   nWindow.title = "Settings";
 
   // Bar
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -5072,7 +4737,7 @@ function buildOverlays() {
 
   // Pane
   // Scale Size
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
   nObject.id = "toggleSize";
   nObject.type = "toggle";
 
@@ -5085,7 +4750,7 @@ function buildOverlays() {
   nWindow.addObjectToPane(nObject);
 
   // Show Empty Scales
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
   nObject.id = "toggleEmpty";
   nObject.type = "toggle";
 
@@ -5098,7 +4763,7 @@ function buildOverlays() {
   nWindow.addObjectToPane(nObject);
 
   // Theme
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
   nObject.id = "toggleTheme";
   nObject.type = "toggle";
 
@@ -5111,7 +4776,7 @@ function buildOverlays() {
   nWindow.addObjectToPane(nObject);
 
   // Units
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
   nObject.id = "toggleUnits";
   nObject.type = "toggle";
 
@@ -5126,7 +4791,7 @@ function buildOverlays() {
   overlay.addScreen(nWindow);
 
   // Kickstarter
-  nWindow = new overlayScreen();
+  nWindow = new OverlayScreen();
   nWindow.id = "kickstarter";
   nWindow.title = "Kickstarter";
 
@@ -5137,12 +4802,12 @@ function buildOverlays() {
   overlay.addScreen(nWindow);
 
   // Share
-  nWindow = new overlayScreen();
+  nWindow = new OverlayScreen();
   nWindow.id = "share";
   nWindow.title = "Share Pattern";
 
   // Bar
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -5156,7 +4821,7 @@ function buildOverlays() {
 
   // Pane
   // URL
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "share";
 
@@ -5165,13 +4830,13 @@ function buildOverlays() {
   overlay.addScreen(nWindow);
 
   // Help & About
-  nWindow = new overlayScreen();
+  nWindow = new OverlayScreen();
   nWindow.id = "help";
   nWindow.title = "Help & About";
 
   // Bar
   // About
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -5183,7 +4848,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Legal
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -5201,7 +4866,7 @@ function buildOverlays() {
 
   // Links
   // Title
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -5210,7 +4875,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Lair of the Raven
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "anchor";
 
@@ -5221,7 +4886,7 @@ function buildOverlays() {
 
   // Contact
   // Title
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -5230,7 +4895,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // E-Mail
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "anchor";
 
@@ -5240,7 +4905,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Facebook
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "anchor";
 
@@ -5250,7 +4915,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Reddit
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "anchor";
 
@@ -5260,7 +4925,7 @@ function buildOverlays() {
   nWindow.addObjectToBar(nObject);
 
   // Twitter
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "anchor";
 
@@ -5272,7 +4937,7 @@ function buildOverlays() {
   // Pane
   // Tutorial Video
   // Title
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -5283,7 +4948,7 @@ function buildOverlays() {
   nWindow.addObjectToPane(nObject);
 
   // Introduction Video
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "brick";
 
@@ -5296,7 +4961,7 @@ function buildOverlays() {
   nWindow.addObjectToPane(nObject);
 
   // Interface Video
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "brick";
 
@@ -5309,7 +4974,7 @@ function buildOverlays() {
   nWindow.addObjectToPane(nObject);
 
   // Creating Video
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "brick";
 
@@ -5322,7 +4987,7 @@ function buildOverlays() {
   nWindow.addObjectToPane(nObject);
 
   // Gallery Video
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "brick";
 
@@ -5335,7 +5000,7 @@ function buildOverlays() {
   nWindow.addObjectToPane(nObject);
 
   // Future Video
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "brick";
 
@@ -5350,14 +5015,14 @@ function buildOverlays() {
   overlay.addScreen(nWindow);
 
   // Compatability Error
-  nWindow = new overlayScreen();
+  nWindow = new OverlayScreen();
   nWindow.id = "compError";
   nWindow.title = "Compatability Issue";
 
   // Bar
 
   // Pane
-  nObject = new overlayObject();
+  nObject = new OverlayObject();
 
   nObject.type = "text";
 
@@ -5378,7 +5043,7 @@ function buildOverlays() {
 // Palette Functions ==================================================================================================
 function buildPalette(target) {
   // Void
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "vod";
   nEnt.name = "Void";
@@ -5396,7 +5061,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Empty
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "non";
   nEnt.name = "Empty";
@@ -5414,7 +5079,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Aluminium (Brushed)
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "alm";
   nEnt.name = "Aluminium (Brushed)";
@@ -5432,7 +5097,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Aluminium (Mirror)
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "als";
   nEnt.name = "Aluminium (Mirror)";
@@ -5450,7 +5115,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Black
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "blk";
   nEnt.name = "Black";
@@ -5468,7 +5133,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Blue
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "Blu";
   nEnt.name = "Blue";
@@ -5486,7 +5151,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Bronze
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "brz";
   nEnt.name = "Bronze";
@@ -5504,7 +5169,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Champagne
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "cpg";
   nEnt.name = "Champange";
@@ -5522,7 +5187,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Copper (Shiny)
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "cpr";
   nEnt.name = "Copper (Shiny)";
@@ -5540,7 +5205,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Frost
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "fst";
   nEnt.name = "Frost";
@@ -5558,7 +5223,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Gold (Brushed)
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "gld";
   nEnt.name = "Gold (Brushed)";
@@ -5576,7 +5241,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Gold (Mirror)
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "glm";
   nEnt.name = "Gold (Mirror)";
@@ -5594,7 +5259,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Green
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "grn";
   nEnt.name = "Green";
@@ -5612,7 +5277,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Orange
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "org";
   nEnt.name = "Orange";
@@ -5630,7 +5295,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Pink
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "pnk";
   nEnt.name = "Pink";
@@ -5648,7 +5313,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Purple
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "ppl";
   nEnt.name = "Purple";
@@ -5666,7 +5331,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Red
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "red";
   nEnt.name = "Red";
@@ -5684,7 +5349,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Clear (Plastic)
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "clr";
   nEnt.name = "Clear (Plastic)";
@@ -5702,7 +5367,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Black (Plastic)
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "blp";
   nEnt.name = "Black (Plastic)";
@@ -5720,7 +5385,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Glow in the Dark
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "gtd";
   nEnt.name = "Glow in the Dark (Plastic)";
@@ -5740,7 +5405,7 @@ function buildPalette(target) {
   //Meads custom stuff IDs for mead are 4 chars
 
   // Light purple
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "lprp";
   nEnt.name = "Light purple";
@@ -5758,7 +5423,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Sky blue
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "skbl";
   nEnt.name = "Sky blue";
@@ -5776,7 +5441,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Lime
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "lime";
   nEnt.name = "Lime";
@@ -5794,7 +5459,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Gold
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "gold";
   nEnt.name = "Gold (more yellow but ok)";
@@ -5812,7 +5477,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Transparent red
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "tred";
   nEnt.name = "Transparent red";
@@ -5830,7 +5495,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Transparent blue
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "tblu";
   nEnt.name = "Transparent blue";
@@ -5848,7 +5513,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Transparent green
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "tgrn";
   nEnt.name = "Transparent green";
@@ -5866,7 +5531,7 @@ function buildPalette(target) {
   palette.addColour(nEnt);
 
   // Transparent yellow
-  nEnt = new paletteColour();
+  nEnt = new PaletteColour();
 
   nEnt.id = "tylw";
   nEnt.name = "Transparent yellow";
@@ -6136,7 +5801,12 @@ function updateScaleVariables(radius) {
 }
 
 // Shape Functions ====================================================================================================
-function drawImg(context, entity, offsetX, offsetY) {
+function drawImg(
+  context: CanvasRenderingContext2D,
+  entity: Entity,
+  offsetX: number,
+  offsetY: number
+) {
   context.beginPath();
 
   if (entity.imageClipX !== false) {
@@ -6162,7 +5832,12 @@ function drawImg(context, entity, offsetX, offsetY) {
   context.closePath();
 }
 
-function drawPalette(context, entity, offsetX, offsetY) {
+function drawPalette(
+  context: CanvasRenderingContext2D,
+  entity: Entity,
+  offsetX: number,
+  offsetY: number
+) {
   // Colour
   drawRect(context, entity, offsetX, offsetY);
   context.fillStyle = entity.fillColour;
@@ -6193,7 +5868,7 @@ function drawRect(context, entity, offsetX, offsetY) {
   }
 
   if (entity.fill === true) {
-    shapeFill(context, entity.fillColour, this.entity.fillOrder);
+    shapeFill(context, entity.fillColour, entity.fillOrder);
   }
 }
 
@@ -6271,7 +5946,7 @@ function drawTooltip(target, originX, originY, tipText, tipFlip) {
   }
 
   // Build Background
-  shapeShadow(shadow, shadowOff, shadow);
+  shapeShadow(target, shadowOff, shadow);
 
   target.beginPath();
   target.rect(
@@ -6299,16 +5974,17 @@ function drawTooltip(target, originX, originY, tipText, tipFlip) {
   target.closePath();
 }
 
-function shapeShadow(target, shadowBlur, offsetX, offsetY, colour) {
-  if (shadowBlur === undefined) shadowBlur = 5;
-  if (offsetX === undefined) offsetX = 0;
-  if (offsetY === undefined) offsetY = 0;
-  if (colour === undefined) colour = "rgba(0, 0, 0, 0.3)";
-
-  target.shadowBlur = shadowBlur;
-  target.shadowColor = colour;
-  target.shadowOffsetX = offsetX;
-  target.shadowOffsetY = offsetY;
+function shapeShadow(
+  ctx: CanvasRenderingContext2D,
+  shadowBlur = 5,
+  offsetX = 0,
+  offsetY = 0,
+  colour = "rgba(0, 0, 0, 0.3)"
+) {
+  ctx.shadowBlur = shadowBlur;
+  ctx.shadowColor = colour;
+  ctx.shadowOffsetX = offsetX;
+  ctx.shadowOffsetY = offsetY;
 }
 
 function shapeShadowReset(target) {
@@ -6337,9 +6013,6 @@ function shapeFill(target, colour, order) {
 
 // Startup Functions ==================================================================================================
 function setupElements() {
-  // Theme
-  themeLibrary.generateThemes();
-
   // Background
   backgroundLayer.id = "canvasBackground";
   backgroundLayer.setupCanvas();
@@ -6389,7 +6062,7 @@ function startDesigner() {
   swatches.regenerateSwatches();
 
   // Editor
-  nEnt = new entity();
+  nEnt = new Entity();
   nEnt.id = "memoryEditor";
   nEnt.shape = "canvas";
   nEnt.imagesrc = swatches.patternSwatch.canvas;
@@ -6402,7 +6075,7 @@ function startDesigner() {
   // Background
   splashText.innerHTML = "Adding layers of complexity...";
 
-  nEnt = new entity();
+  nEnt = new Entity();
   nEnt.id = "background";
   nEnt.shape = "background";
 
@@ -6552,7 +6225,7 @@ function setupCameraButtons() {
 
   // Buttons
   // Settings
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "toolboxSettings";
 
@@ -6563,7 +6236,7 @@ function setupCameraButtons() {
   uiCamera.addButton(nEnt);
 
   // Kickstarter
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "toolboxKickstarter";
 
@@ -6574,7 +6247,7 @@ function setupCameraButtons() {
   uiCamera.addButton(nEnt);
 
   // Help
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "toolboxHelp";
 
@@ -6585,7 +6258,7 @@ function setupCameraButtons() {
   uiCamera.addButton(nEnt);
 
   // Zoom In
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "cameraZoomIn";
 
@@ -6597,7 +6270,7 @@ function setupCameraButtons() {
   uiCamera.addButton(nEnt);
 
   // Zoom Out
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "cameraZoomOut";
 
@@ -6608,7 +6281,7 @@ function setupCameraButtons() {
   uiCamera.addButton(nEnt);
 
   // Center
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "cameraCenter";
 
@@ -6619,7 +6292,7 @@ function setupCameraButtons() {
   uiCamera.addButton(nEnt);
 
   // Extents
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "cameraExtents";
 
@@ -6630,7 +6303,7 @@ function setupCameraButtons() {
   uiCamera.addButton(nEnt);
 
   // Save
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "cameraPhoto";
 
@@ -6641,7 +6314,7 @@ function setupCameraButtons() {
   uiCamera.addButton(nEnt);
 
   // Flip
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "cameraFlip";
 
@@ -6652,7 +6325,7 @@ function setupCameraButtons() {
   uiCamera.addButton(nEnt);
 
   // Reset
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "cameraReset";
 
@@ -6669,7 +6342,7 @@ function setupToolboxButtons() {
 
   // Buttons
   // New
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "toolboxNew";
 
@@ -6680,7 +6353,7 @@ function setupToolboxButtons() {
   uiToolbox.addButton(nEnt);
 
   // Open
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "toolboxOpen";
 
@@ -6691,7 +6364,7 @@ function setupToolboxButtons() {
   uiToolbox.addButton(nEnt);
 
   // Save
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "toolboxSave";
 
@@ -6702,7 +6375,7 @@ function setupToolboxButtons() {
   uiToolbox.addButton(nEnt);
 
   // Share
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "toolboxShare";
 
@@ -6713,7 +6386,7 @@ function setupToolboxButtons() {
   uiToolbox.addButton(nEnt);
 
   // Cursor
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "toolboxCursor";
 
@@ -6726,7 +6399,7 @@ function setupToolboxButtons() {
   uiToolbox.addButton(nEnt);
 
   // Pan
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "cameraPan";
 
@@ -6738,7 +6411,7 @@ function setupToolboxButtons() {
   uiToolbox.addButton(nEnt);
 
   // Brush
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "toolboxBrush";
 
@@ -6750,13 +6423,13 @@ function setupToolboxButtons() {
   uiToolbox.addButton(nEnt);
 
   // Fill
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "toolboxFill";
   nEnt.group = "fill";
 
   // Fill Row
-  sEnt = new uiButton();
+  sEnt = new UiButton();
 
   sEnt.name = "toolboxFillRow";
   sEnt.group = "fill";
@@ -6769,7 +6442,7 @@ function setupToolboxButtons() {
   nEnt.addButton(sEnt);
 
   // Fill Column
-  sEnt = new uiButton();
+  sEnt = new UiButton();
 
   sEnt.name = "toolboxFillColumn";
   sEnt.group = "fill";
@@ -6782,7 +6455,7 @@ function setupToolboxButtons() {
   nEnt.addButton(sEnt);
 
   // Fill Colour
-  sEnt = new uiButton();
+  sEnt = new UiButton();
 
   sEnt.name = "toolboxFillColour";
   sEnt.group = "fill";
@@ -6805,13 +6478,13 @@ function setupToolboxButtons() {
   uiToolbox.addButton(nEnt);
 
   // Row
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "toolboxRow";
   nEnt.group = "row";
 
   // Insert Row
-  sEnt = new uiButton();
+  sEnt = new UiButton();
 
   sEnt.name = "toolboxRowInsert";
   sEnt.group = "row";
@@ -6824,7 +6497,7 @@ function setupToolboxButtons() {
   nEnt.addButton(sEnt);
 
   // Remove Row
-  sEnt = new uiButton();
+  sEnt = new UiButton();
 
   sEnt.name = "toolboxRowRemove";
   sEnt.group = "row";
@@ -6837,7 +6510,7 @@ function setupToolboxButtons() {
   nEnt.addButton(sEnt);
 
   // Copy Row
-  sEnt = new uiButton();
+  sEnt = new UiButton();
 
   sEnt.name = "toolboxRowCopy";
   sEnt.group = "row";
@@ -6850,7 +6523,7 @@ function setupToolboxButtons() {
   nEnt.addButton(sEnt);
 
   // Paste Row
-  sEnt = new uiButton();
+  sEnt = new UiButton();
 
   sEnt.name = "toolboxRowPaste";
   sEnt.group = "row";
@@ -6873,13 +6546,13 @@ function setupToolboxButtons() {
   uiToolbox.addButton(nEnt);
 
   // Column
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "toolboxColumn";
   nEnt.group = "column";
 
   // Insert Column
-  sEnt = new uiButton();
+  sEnt = new UiButton();
 
   sEnt.name = "toolboxColumnInsert";
   sEnt.group = "column";
@@ -6892,7 +6565,7 @@ function setupToolboxButtons() {
   nEnt.addButton(sEnt);
 
   // Remove Column
-  sEnt = new uiButton();
+  sEnt = new UiButton();
 
   sEnt.name = "toolboxColumnRemove";
   sEnt.group = "column";
@@ -6905,7 +6578,7 @@ function setupToolboxButtons() {
   nEnt.addButton(sEnt);
 
   // Copy Column
-  sEnt = new uiButton();
+  sEnt = new UiButton();
 
   sEnt.name = "toolboxColumnCopy";
   sEnt.group = "column";
@@ -6921,7 +6594,7 @@ function setupToolboxButtons() {
   nEnt.addButton(sEnt);
 
   // Paste Column
-  sEnt = new uiButton();
+  sEnt = new UiButton();
 
   sEnt.name = "toolboxColumnPaste";
   sEnt.group = "column";
@@ -6944,7 +6617,7 @@ function setupToolboxButtons() {
   uiToolbox.addButton(nEnt);
 
   // Replace
-  nEnt = new uiButton();
+  nEnt = new UiButton();
 
   nEnt.name = "toolboxReplace";
 
@@ -6995,7 +6668,7 @@ function createPalette(target) {
       strokeColour = palette.colours[x].hex;
     }
 
-    nEnt = new entity();
+    nEnt = new Entity();
     nEnt.id = palette.colours[x].id;
     nEnt.shape = "palette";
 
@@ -7159,7 +6832,7 @@ function createData(target, pattern) {
     posY = target.height - 20 - oHeight + h;
     oHeight -= h;
 
-    nEnt = new entity();
+    nEnt = new Entity();
     nEnt.id = "data-" + x;
     nEnt.shape = "text";
 
@@ -7180,3 +6853,7 @@ function createData(target, pattern) {
 function inchesFraction(v) {
   return Math.floor(16 * (v % 1)) + "/16ths";
 }
+
+setupElements();
+imageAssets.loadImages();
+addEvent(window, "resize", scaleCanvases);
