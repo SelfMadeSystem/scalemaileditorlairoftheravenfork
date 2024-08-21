@@ -1,18 +1,14 @@
+import { uiIconSize, uiOffsetX, uiOffsetY } from ".";
 import Entity from "../Entity";
-
-const uiIconSize = 30;
-const uiOffsetX = 15;
-const uiOffsetY = 15;
 
 export class UiButton {
   public name = "";
   public group = "";
   public subbuttons: UiButton[] = [];
 
-  public action = "";
   public expanded = false;
   public expandable = false;
-  public helptext = [];
+  public helptext: string[] = [];
   public icon: string | undefined;
   public pregap = false;
   public selected = 0;

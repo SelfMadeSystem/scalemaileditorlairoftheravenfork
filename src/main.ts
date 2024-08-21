@@ -17,6 +17,7 @@ import { overlayInterface, setOverlay } from "./overlay/OverlayInterface";
 import { OverlayScreen } from "./overlay/OverlayScreen";
 import { OverlayObject } from "./overlay/OverlayObject";
 import { UiButton } from "./ui/UiButton";
+import { UiSection } from "./ui/UiSection";
 
 // Variables ==========================================================================================================
 // Assets
@@ -34,10 +35,6 @@ var photoLayer = new EntityLayer();
 var canvasCenterX = 0;
 var canvasCenterY = 0;
 var updateInterval = 1000 / 60;
-
-// Entities
-var nEnt;
-var sEnt;
 
 // Font Styles
 const fontStyles = [
@@ -188,81 +185,7 @@ var currentTool = "toolboxCursor";
 
 // Objects ============================================================================================================
 // Interface
-function UiSection() {
-  this.name = "";
-  this.buttons = [];
 
-  this.alignRight = false;
-  this.alignBottom = false;
-
-  this.addButton = function (btn) {
-    this.buttons.push(btn);
-  };
-
-  this.buildSection = function (target) {
-    // Variables
-    var x = 0;
-    var y = this.buttons.length;
-    var z = 0;
-    var l = 0;
-
-    var sx = 0;
-
-    var ox = 0;
-    var oy = 0;
-
-    // Configure Origin
-    if (this.alignRight === true) {
-      ox = target.width - uiOffsetX - uiIconSize;
-    } else {
-      ox = uiOffsetX;
-    }
-
-    if (this.alignBottom === true) {
-      oy = target.height - uiOffsetX - uiIconSize;
-    } else {
-      oy = uiOffsetY;
-    }
-
-    // Create Entities
-    for (x = 0; x < y; x++) {
-      if (this.buttons[x].pregap === true) {
-        sx += uiIconSize;
-      }
-
-      target.addEntity(
-        ...this.buttons[x].createButtonEntity(
-          currentTool === this.buttons[x].name,
-          ox,
-          oy + uiIconSize * x + sx
-        )
-      );
-
-      if (
-        this.buttons[x].expandable === true &&
-        this.buttons[x].expanded === true
-      ) {
-        l = this.buttons[x].subbuttons.length;
-
-        for (z = 0; z < l; z++) {
-          if (this.buttons[x].subbuttons[z].name == currentTool) {
-            this.buttons[x].selected = z;
-            this.buttons[x].name = this.buttons[x].subbuttons[z].name;
-            this.buttons[x].helptext = this.buttons[x].subbuttons[z].helptext;
-          }
-
-          target.addEntity(
-            ...this.buttons[x].subbuttons[z].createButtonEntity(
-              currentTool === this.buttons[x].subbuttons[z].name,
-              ox + uiIconSize * z,
-              oy + uiIconSize * x + sx
-            )
-          );
-        }
-      }
-    }
-  };
-}
 
 // Layer
 function EntityLayer() {
@@ -3222,7 +3145,7 @@ function buildOverlays() {
 // Palette Functions ==================================================================================================
 function buildPalette() {
   // Void
-  nEnt = new PaletteColour();
+  let nEnt = new PaletteColour();
 
   nEnt.id = "vod";
   nEnt.name = "Void";
@@ -4022,7 +3945,7 @@ function drawPalette(
   context.fill();
 
   // Brush
-  if (entity.fillPalette.brushed === true) {
+  if (entity.fillPalette?.brushed === true) {
     drawRect(context, entity, offsetX, offsetY);
     context.globalCompositeOperation = "overlay";
     context.fillStyle = swatches.textureSwatches[1].pattern;
@@ -4236,7 +4159,7 @@ function startDesigner() {
   swatches.regenerateSwatches();
 
   // Editor
-  nEnt = new Entity();
+  let nEnt = new Entity();
   nEnt.id = "memoryEditor";
   nEnt.shape = "canvas";
   nEnt.imagesrc = swatches.patternSwatch.canvas;
@@ -4388,11 +4311,10 @@ function setupCameraButtons() {
 
   // Buttons
   // Settings
-  nEnt = new UiButton();
+  let nEnt = new UiButton();
 
   nEnt.name = "toolboxSettings";
 
-  nEnt.action = false;
   nEnt.icon = "iconSettings";
   nEnt.tiptext = "Editor Settings";
 
@@ -4403,7 +4325,6 @@ function setupCameraButtons() {
 
   nEnt.name = "toolboxKickstarter";
 
-  nEnt.action = false;
   nEnt.icon = "iconKickstarter";
   nEnt.tiptext = "Kickstarter Supporters";
 
@@ -4414,7 +4335,6 @@ function setupCameraButtons() {
 
   nEnt.name = "toolboxHelp";
 
-  nEnt.action = false;
   nEnt.icon = "iconHelp";
   nEnt.tiptext = "Help & About";
 
@@ -4425,7 +4345,6 @@ function setupCameraButtons() {
 
   nEnt.name = "cameraZoomIn";
 
-  nEnt.action = false;
   nEnt.icon = "iconZoomIn";
   nEnt.pregap = true;
   nEnt.tiptext = "Zoom In";
@@ -4437,7 +4356,6 @@ function setupCameraButtons() {
 
   nEnt.name = "cameraZoomOut";
 
-  nEnt.action = false;
   nEnt.icon = "iconZoomOut";
   nEnt.tiptext = "Zoom Out";
 
@@ -4448,7 +4366,6 @@ function setupCameraButtons() {
 
   nEnt.name = "cameraCenter";
 
-  nEnt.action = false;
   nEnt.icon = "iconCenter";
   nEnt.tiptext = "Center View";
 
@@ -4459,7 +4376,6 @@ function setupCameraButtons() {
 
   nEnt.name = "cameraExtents";
 
-  nEnt.action = false;
   nEnt.icon = "iconExtents";
   nEnt.tiptext = "Zoom to Extents";
 
@@ -4470,7 +4386,6 @@ function setupCameraButtons() {
 
   nEnt.name = "cameraPhoto";
 
-  nEnt.action = false;
   nEnt.icon = "iconCamera";
   nEnt.tiptext = "Save Image";
 
@@ -4481,7 +4396,6 @@ function setupCameraButtons() {
 
   nEnt.name = "cameraFlip";
 
-  nEnt.action = false;
   nEnt.icon = "iconFlip";
   nEnt.tiptext = "Flip Pattern";
 
@@ -4492,7 +4406,6 @@ function setupCameraButtons() {
 
   nEnt.name = "cameraReset";
 
-  nEnt.action = false;
   nEnt.icon = "iconReset";
   nEnt.tiptext = "Reset View";
 
@@ -4505,11 +4418,10 @@ function setupToolboxButtons() {
 
   // Buttons
   // New
-  nEnt = new UiButton();
+  let nEnt = new UiButton();
 
   nEnt.name = "toolboxNew";
 
-  nEnt.action = false;
   nEnt.icon = "iconNew";
   nEnt.tiptext = "New Pattern";
 
@@ -4520,7 +4432,6 @@ function setupToolboxButtons() {
 
   nEnt.name = "toolboxCursor";
 
-  nEnt.action = false;
   nEnt.helptext = ["Cursor Tool", "Click a scale to change its colour."];
   nEnt.icon = "iconCursor";
   nEnt.pregap = true;
@@ -4533,7 +4444,6 @@ function setupToolboxButtons() {
 
   nEnt.name = "cameraPan";
 
-  nEnt.action = false;
   nEnt.helptext = ["Pan Tool", "Click anywhere to pan."];
   nEnt.icon = "iconPan";
   nEnt.tiptext = "Pan Mode";
@@ -4545,7 +4455,6 @@ function setupToolboxButtons() {
 
   nEnt.name = "toolboxBrush";
 
-  nEnt.action = false;
   nEnt.helptext = ["Brush Tool", "Click and hold to colour many scales."];
   nEnt.icon = "iconBrush";
   nEnt.tiptext = "Brush Tool";
@@ -4559,48 +4468,44 @@ function setupToolboxButtons() {
   nEnt.group = "fill";
 
   // Fill Row
-  sEnt = new UiButton();
+  nEnt = new UiButton();
 
-  sEnt.name = "toolboxFillRow";
-  sEnt.group = "fill";
+  nEnt.name = "toolboxFillRow";
+  nEnt.group = "fill";
 
-  sEnt.action = false;
-  sEnt.helptext = ["Fill Row", "Click to colour an entire row."];
-  sEnt.icon = "iconFillRow";
-  sEnt.tiptext = "Fill Row";
+  nEnt.helptext = ["Fill Row", "Click to colour an entire row."];
+  nEnt.icon = "iconFillRow";
+  nEnt.tiptext = "Fill Row";
 
-  nEnt.addButton(sEnt);
+  nEnt.addButton(nEnt);
 
   // Fill Column
-  sEnt = new UiButton();
+  nEnt = new UiButton();
 
-  sEnt.name = "toolboxFillColumn";
-  sEnt.group = "fill";
+  nEnt.name = "toolboxFillColumn";
+  nEnt.group = "fill";
 
-  sEnt.action = false;
-  sEnt.helptext = ["Fill Column", "Click to colour an entire column."];
-  sEnt.icon = "iconFillColumn";
-  sEnt.tiptext = "Fill Column";
+  nEnt.helptext = ["Fill Column", "Click to colour an entire column."];
+  nEnt.icon = "iconFillColumn";
+  nEnt.tiptext = "Fill Column";
 
-  nEnt.addButton(sEnt);
+  nEnt.addButton(nEnt);
 
   // Fill Colour
-  sEnt = new UiButton();
+  nEnt = new UiButton();
 
-  sEnt.name = "toolboxFillColour";
-  sEnt.group = "fill";
+  nEnt.name = "toolboxFillColour";
+  nEnt.group = "fill";
 
-  sEnt.action = false;
-  sEnt.helptext = [
+  nEnt.helptext = [
     "Fill Area",
     "Click to change all adjacent scales of the same colour.",
   ];
-  sEnt.icon = "iconFillColour";
-  sEnt.tiptext = "Fill Colour";
+  nEnt.icon = "iconFillColour";
+  nEnt.tiptext = "Fill Colour";
 
-  nEnt.addButton(sEnt);
+  nEnt.addButton(nEnt);
 
-  nEnt.action = false;
   nEnt.expandable = true;
 
   uiToolbox.addButton(nEnt);
@@ -4612,61 +4517,56 @@ function setupToolboxButtons() {
   nEnt.group = "row";
 
   // Insert Row
-  sEnt = new UiButton();
+  nEnt = new UiButton();
 
-  sEnt.name = "toolboxRowInsert";
-  sEnt.group = "row";
+  nEnt.name = "toolboxRowInsert";
+  nEnt.group = "row";
 
-  sEnt.action = false;
-  sEnt.helptext = ["Insert Row", "Click to add a new row of scales."];
-  sEnt.icon = "iconRowInsert";
-  sEnt.tiptext = "Insert Row";
+  nEnt.helptext = ["Insert Row", "Click to add a new row of scales."];
+  nEnt.icon = "iconRowInsert";
+  nEnt.tiptext = "Insert Row";
 
-  nEnt.addButton(sEnt);
+  nEnt.addButton(nEnt);
 
   // Remove Row
-  sEnt = new UiButton();
+  nEnt = new UiButton();
 
-  sEnt.name = "toolboxRowRemove";
-  sEnt.group = "row";
+  nEnt.name = "toolboxRowRemove";
+  nEnt.group = "row";
 
-  sEnt.action = false;
-  sEnt.helptext = ["Remove Row", "Click to remove a row of scales."];
-  sEnt.icon = "iconRowRemove";
-  sEnt.tiptext = "Delete Row";
+  nEnt.helptext = ["Remove Row", "Click to remove a row of scales."];
+  nEnt.icon = "iconRowRemove";
+  nEnt.tiptext = "Delete Row";
 
-  nEnt.addButton(sEnt);
+  nEnt.addButton(nEnt);
 
   // Copy Row
-  sEnt = new UiButton();
+  nEnt = new UiButton();
 
-  sEnt.name = "toolboxRowCopy";
-  sEnt.group = "row";
+  nEnt.name = "toolboxRowCopy";
+  nEnt.group = "row";
 
-  sEnt.action = false;
-  sEnt.helptext = ["Copy Row", "Click to copy the colours of a row of scales."];
-  sEnt.icon = "iconRowCopy";
-  sEnt.tiptext = "Copy Row";
+  nEnt.helptext = ["Copy Row", "Click to copy the colours of a row of scales."];
+  nEnt.icon = "iconRowCopy";
+  nEnt.tiptext = "Copy Row";
 
-  nEnt.addButton(sEnt);
+  nEnt.addButton(nEnt);
 
   // Paste Row
-  sEnt = new UiButton();
+  nEnt = new UiButton();
 
-  sEnt.name = "toolboxRowPaste";
-  sEnt.group = "row";
+  nEnt.name = "toolboxRowPaste";
+  nEnt.group = "row";
 
-  sEnt.action = false;
-  sEnt.helptext = [
+  nEnt.helptext = [
     "Paste Row",
     "Click to paste the copied colours of a row of scales.",
   ];
-  sEnt.icon = "iconRowPaste";
-  sEnt.tiptext = "Paste Row";
+  nEnt.icon = "iconRowPaste";
+  nEnt.tiptext = "Paste Row";
 
-  nEnt.addButton(sEnt);
+  nEnt.addButton(nEnt);
 
-  nEnt.action = false;
   nEnt.expandable = true;
 
   uiToolbox.addButton(nEnt);
@@ -4678,64 +4578,59 @@ function setupToolboxButtons() {
   nEnt.group = "column";
 
   // Insert Column
-  sEnt = new UiButton();
+  nEnt = new UiButton();
 
-  sEnt.name = "toolboxColumnInsert";
-  sEnt.group = "column";
+  nEnt.name = "toolboxColumnInsert";
+  nEnt.group = "column";
 
-  sEnt.action = false;
-  sEnt.helptext = ["Insert Column", "Click to insert a new column of scales."];
-  sEnt.icon = "iconColumnInsert";
-  sEnt.tiptext = "Insert Column";
+  nEnt.helptext = ["Insert Column", "Click to insert a new column of scales."];
+  nEnt.icon = "iconColumnInsert";
+  nEnt.tiptext = "Insert Column";
 
-  nEnt.addButton(sEnt);
+  nEnt.addButton(nEnt);
 
   // Remove Column
-  sEnt = new UiButton();
+  nEnt = new UiButton();
 
-  sEnt.name = "toolboxColumnRemove";
-  sEnt.group = "column";
+  nEnt.name = "toolboxColumnRemove";
+  nEnt.group = "column";
 
-  sEnt.action = false;
-  sEnt.helptext = ["Remove Column", "Click to remove a column of scales."];
-  sEnt.icon = "iconColumnRemove";
-  sEnt.tiptext = "Delete Column";
+  nEnt.helptext = ["Remove Column", "Click to remove a column of scales."];
+  nEnt.icon = "iconColumnRemove";
+  nEnt.tiptext = "Delete Column";
 
-  nEnt.addButton(sEnt);
+  nEnt.addButton(nEnt);
 
   // Copy Column
-  sEnt = new UiButton();
+  nEnt = new UiButton();
 
-  sEnt.name = "toolboxColumnCopy";
-  sEnt.group = "column";
+  nEnt.name = "toolboxColumnCopy";
+  nEnt.group = "column";
 
-  sEnt.action = false;
-  sEnt.helptext = [
+  nEnt.helptext = [
     "Copy Column",
     "Click to copy the colours of a column of scales.",
   ];
-  sEnt.icon = "iconColumnCopy";
-  sEnt.tiptext = "Copy Column";
+  nEnt.icon = "iconColumnCopy";
+  nEnt.tiptext = "Copy Column";
 
-  nEnt.addButton(sEnt);
+  nEnt.addButton(nEnt);
 
   // Paste Column
-  sEnt = new UiButton();
+  nEnt = new UiButton();
 
-  sEnt.name = "toolboxColumnPaste";
-  sEnt.group = "column";
+  nEnt.name = "toolboxColumnPaste";
+  nEnt.group = "column";
 
-  sEnt.action = false;
-  sEnt.helptext = [
+  nEnt.helptext = [
     "Paste Column",
     "Click to paste the copied colours of a row of scales.",
   ];
-  sEnt.icon = "iconColumnPaste";
-  sEnt.tiptext = "Paste Column";
+  nEnt.icon = "iconColumnPaste";
+  nEnt.tiptext = "Paste Column";
 
-  nEnt.addButton(sEnt);
+  nEnt.addButton(nEnt);
 
-  nEnt.action = false;
   nEnt.expandable = true;
 
   uiToolbox.addButton(nEnt);
@@ -4745,7 +4640,6 @@ function setupToolboxButtons() {
 
   nEnt.name = "toolboxReplace";
 
-  nEnt.action = false;
   nEnt.helptext = [
     "Replace Colour",
     "Click to change all scales of a single colour.",
@@ -4759,9 +4653,9 @@ function setupToolboxButtons() {
 function createInterface() {
   uiLayer.clearEntities();
 
-  uiToolbox.buildSection(uiLayer);
+  uiToolbox.buildSection(uiLayer, currentTool);
   createPalette(uiLayer);
-  uiCamera.buildSection(uiLayer);
+  uiCamera.buildSection(uiLayer, currentTool);
   createData(uiLayer, editorPattern);
 }
 
@@ -4792,7 +4686,7 @@ function createPalette(target) {
       strokeColour = palette.colours[x].hex;
     }
 
-    nEnt = new Entity();
+    const nEnt = new Entity();
     nEnt.id = palette.colours[x].id;
     nEnt.shape = "palette";
 
@@ -4841,7 +4735,7 @@ function createData(target, pattern) {
   var wRings = 0;
   var wTotal = 0;
 
-  var output = [];
+  var output: [number, string][] = [];
 
   var oHeight = 0;
   var oWidth = 0;
@@ -4956,7 +4850,7 @@ function createData(target, pattern) {
     posY = target.height - 20 - oHeight + h;
     oHeight -= h;
 
-    nEnt = new Entity();
+    const nEnt = new Entity();
     nEnt.id = "data-" + x;
     nEnt.shape = "text";
 

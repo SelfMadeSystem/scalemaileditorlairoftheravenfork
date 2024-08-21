@@ -1,3 +1,4 @@
+import { PaletteColour } from "./Palette";
 import { UiButton } from "./ui/UiButton";
 
 export default class Entity {
@@ -13,7 +14,7 @@ export default class Entity {
   public fill = false;
   public fillColour = "";
   public fillOrder = "nonzero";
-  public fillPalette = 0;
+  public fillPalette: PaletteColour | undefined;
 
   public stroke = false;
   public strokeColour = "";
