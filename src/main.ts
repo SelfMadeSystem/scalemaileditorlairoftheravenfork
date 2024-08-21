@@ -8,7 +8,7 @@
  */
 
 import "./style.css";
-import ImageLoader from "./ImageLoader";
+import ImageLoader, { imagePath } from "./ImageLoader";
 import Entity from "./Entity";
 import { ColourPalette, PaletteColour } from "./Palette";
 import { Swatch } from "./Swatch";

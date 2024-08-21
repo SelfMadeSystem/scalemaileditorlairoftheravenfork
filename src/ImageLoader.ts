@@ -1,4 +1,4 @@
-const imagePath = "images/";
+export const imagePath = "images/";
 
 export default class ImageLoader {
   public list: [string, string][] = [
