@@ -17,6 +17,7 @@ import { stringToElements } from "./utils";
 import { OverlayInterface } from "./overlay/OverlayInterface";
 import { OverlayScreen } from "./overlay/OverlayScreen";
 import { OverlayObject } from "./overlay/OverlayObject";
+import { OverlayPane } from "./overlay/OverlayPane";
 
 // Variables ==========================================================================================================
 // Assets
@@ -1578,438 +1579,6 @@ function takePhoto() {
   zoomExtents(editorPattern);
 }
 
-// Gallery Functions ==================================================================================================
-// General
-function showError(target, message) {
-  var input = document.getElementById(target);
-  var error = document.getElementById(target + "Error");
-
-  input.className = "error";
-
-  error.innerHTML = message;
-  error.className += " show";
-}
-
-function clearErrors(list) {
-  var x = 0;
-  var y = list.length;
-
-  for (x = 0; x < y; x++) {
-    document.getElementById(list[x]).className = "";
-    document.getElementById(list[x] + "Error").className = "inputError";
-  }
-}
-
-function disableUI(butn) {
-  document.getElementById(butn).disabled = true;
-  overlay.showLoading();
-}
-
-function enableUI(butn) {
-  document.getElementById(butn).disabled = false;
-  overlay.hideLoading();
-}
-
-// Save
-function savePattern() {
-  // Disable Interface / Waiting
-  clearErrors(["oTitle", "oAuthor", "oPassword", "oPrivate"]);
-  disableUI("oSave");
-
-  // Variables
-  // Gather Data
-  var saveTitle = document.getElementById("oTitle").value;
-  var saveAuthor = document.getElementById("oAuthor").value;
-  var savePassword = document.getElementById("oPassword").value;
-  var savePrivate = document.getElementById("oPrivate").checked;
-  var savePattern = JSON.stringify(editorPattern);
-  var saveScales = sCount;
-  var saveImage;
-
-  var savePost = "";
-
-  // Memory Canvas
-  var saveCanvas = saveLayer.canvas;
-  var saveContext = saveLayer.context;
-
-  // Error Log
-  var error = false;
-  var errorList = [];
-
-  // Generic
-  var x = 0;
-  var y = 0;
-
-  var de = drawEmpty;
-
-  // Validate Data
-  if (
-    saveTitle == "" ||
-    saveTitle == null ||
-    saveTitle == undefined ||
-    saveTitle.length > 60 ||
-    checkRestricted(saveTitle) === true ||
-    checkCharacters(saveTitle)
-  ) {
-    errorList.push([
-      "oTitle",
-      "Please enter a title for your pattern, that is less than 60 characters long, and only contains letters, numbers, spaces, underscores, and hyphens.",
-    ]);
-    error = true;
-  }
-
-  if (
-    saveAuthor == "" ||
-    saveAuthor == null ||
-    saveAuthor == undefined ||
-    saveAuthor.length > 60 ||
-    checkRestricted(saveAuthor, true) === true ||
-    checkCharacters(saveAuthor)
-  ) {
-    errorList.push([
-      "oAuthor",
-      "Please enter an author name, that is less than 60 characters long, and only contains letters, numbers, spaces, underscores, and hyphens.",
-    ]);
-    error = true;
-  }
-
-  if (
-    savePassword == "" ||
-    savePassword == null ||
-    savePassword == undefined ||
-    savePassword.length > 60
-  ) {
-    errorList.push([
-      "oPassword",
-      "Please enter a password, that is less than 60 characters long.",
-    ]);
-    error = true;
-  }
-
-  if (savePrivate !== true && savePrivate !== false) {
-    errorList.push([
-      "oTitle",
-      "Please check or uncheck the 'Show in Gallery' box.",
-    ]);
-    error = true;
-  }
-
-  if (error === true) {
-    y = errorList.length;
-
-    for (x = 0; x < y; x++) {
-      showError(errorList[x][0], errorList[x][1]);
-    }
-
-    enableUI("oSave");
-
-    return false;
-  }
-
-  // Take canvas screenshot
-  // Configure memory canvas
-  saveContext.setTransform(1, 0, 0, 1, 0, 0);
-  saveContext.fillStyle = themeLibrary.themes[theme].backgroundColour;
-  saveContext.fillRect(0, 0, 250, 250);
-
-  // Create Image
-  var ch = swatches.patternSwatch.canvas.height;
-  var cw = swatches.patternSwatch.canvas.width;
-  var scale = calculateScale(250, 250, ch, cw);
-
-  drawEmpty = false;
-  swatches.regenerateSwatches();
-
-  saveContext.scale(scale, scale);
-  saveContext.drawImage(
-    swatches.patternSwatch.canvas,
-    250 - cw * scale,
-    250 - ch * scale
-  );
-
-  saveImage = saveCanvas.toDataURL("image/jpeg", 1);
-
-  // Restore Original Canvas
-  drawEmpty = de;
-  zoomExtents(editorPattern);
-
-  // Construct save data
-  savePost = "title=" + saveTitle;
-  savePost += "&author=" + saveAuthor;
-  savePost += "&password=" + savePassword;
-  savePost += "&private=" + savePrivate;
-  savePost += "&pattern=" + savePattern;
-  savePost += "&image=" + saveImage;
-  savePost += "&scales=" + sCount;
-
-  // Send data to server
-  sendRequest("savePattern", savePost, saveResponse);
-}
-
-function saveResponse(response) {
-  var response = JSON.parse(response);
-  var message = "";
-
-  var x = 0;
-  var y = response.messages.length;
-
-  // Output response
-  if (response.code == "s") {
-    setLoadData(response.id, response.title, response.author, response.privacy);
-    setURL(loadedID, loadedTitle);
-
-    overlay.hideOverlay();
-  } else {
-    for (x = 0; x < y; x++) {
-      message +=
-        response.messages[x].input + ": " + response.messages[x].txt + "\n";
-    }
-
-    enableUI("oSave");
-    window.alert(message);
-  }
-}
-
-// Gallery
-function loadGallery() {
-  // Disable UI
-  clearErrors(["loadTitle", "loadAuthor"]);
-  disableUI("loadButton");
-
-  // Variables
-  // Gather search terms
-  var searchTitle = document.getElementById("loadTitle").value;
-  var searchAuthor = document.getElementById("loadAuthor").value;
-  var searchMin = document.getElementById("loadMin").value;
-  var searchMax = document.getElementById("loadMax").value;
-  var sort = document.getElementsByName("sort");
-
-  var sort = checkRadio(sort);
-
-  var loadPost = "";
-
-  // Error Log
-  var error = false;
-  var errorList = [];
-
-  // Generic
-  var x = 0;
-  var y = 0;
-
-  // Validate terms
-  if (searchTitle == "" || searchTitle == null || searchTitle == undefined) {
-    searchTitle = "";
-  } else {
-    if (checkCharacters(searchTitle)) {
-      errorList.push([
-        "loadTitle",
-        "Search terms may only contains letters, numbers, spaces, underscores, and hyphens.",
-      ]);
-      error = true;
-    }
-  }
-
-  if (searchAuthor == "" || searchAuthor == null || searchAuthor == undefined) {
-    searchAuthor = "";
-  } else {
-    if (checkCharacters(searchAuthor)) {
-      errorList.push([
-        "loadAuthor",
-        "Search terms may only contains letters, numbers, spaces, underscores, and hyphens.",
-      ]);
-      error = true;
-    }
-  }
-
-  if (error === true) {
-    y = errorList.length;
-
-    for (x = 0; x < y; x++) {
-      showError(errorList[x][0], errorList[x][1]);
-    }
-
-    enableUI("loadButton");
-
-    return false;
-  }
-
-  // Construct Query
-  loadPost = "title=" + searchTitle;
-  loadPost += "&author=" + searchAuthor;
-  loadPost += "&minS=" + searchMin;
-  loadPost += "&maxS=" + searchMax;
-  loadPost += "&sort=" + sort;
-
-  // Send data to server
-  sendRequest("loadGallery", loadPost, galleryResponse);
-  searchPage = 0;
-}
-
-function galleryResponse(response, mode = false) {
-  if (mode === false) {
-    response = JSON.parse(response);
-    searchResults = response;
-  }
-
-  var output = "";
-  var offset = searchPage * pageLimit;
-  var temp = "";
-
-  var x = 0;
-  var y = response.results.length;
-  var z = 0;
-
-  // Output response
-  output += "<h2>" + response.heading + "</h2>";
-
-  if (response.message != "") {
-    output += "<p>" + response.message + "</p>";
-  }
-
-  for (x = 0; x < pageLimit; x++) {
-    output +=
-      "<div class='areaBrick backgroundTheme cursorPointer' onclick='loadPattern(\"" +
-      response.results[x + offset].id +
-      "\");'>";
-    output +=
-      "<img src='patterns/" + response.results[x + offset].src + ".jpg' />";
-    output += "<p>" + response.results[x + offset].title + "</p>";
-    output += "<p>" + response.results[x + offset].author + "</p>";
-    output +=
-      "<p>" +
-      response.results[x + offset].timestamp +
-      ", " +
-      response.results[x + offset].scales +
-      " scales</p>";
-    output += "</div>";
-
-    if (x + offset >= y - 1) {
-      x++;
-      break;
-    }
-  }
-
-  for (z = 0; z < 8; z++) {
-    output += "<div class='areaBrick hidden'></div>";
-  }
-
-  // Page controls
-  output += "<div class='inputWrapper center'>";
-  // Back Button
-  if (searchPage < 1) {
-    temp = "disabled ";
-  } else {
-    temp = "";
-  }
-
-  output +=
-    "<input class='page' type='button' value='<<' onclick='galleryPage(0);' " +
-    temp +
-    "/>";
-
-  // Page Counter
-  output +=
-    "<p class='noflex'>" +
-    (searchPage + 1) +
-    " / " +
-    Math.ceil(y / pageLimit) +
-    "</p>";
-
-  // Forward Button
-  if (x + offset == y) {
-    temp = "disabled ";
-  } else {
-    temp = "";
-  }
-
-  output +=
-    "<input class='page' type='button' value='>>' onclick='galleryPage(1);' " +
-    temp +
-    "/>";
-
-  output += "</div>";
-
-  // Output results
-  document.getElementById("htmlArea").innerHTML = output;
-  enableUI("loadButton");
-}
-
-function galleryPage(mode) {
-  if (mode > 0) {
-    if (searchPage * pageLimit < searchResults.results.length) {
-      searchPage++;
-    }
-  } else {
-    if (searchPage > 0) {
-      searchPage--;
-    }
-  }
-
-  galleryResponse(searchResults, true);
-}
-
-// Pattern Loading
-function loadPattern(id) {
-  // Variables
-  log = "";
-  id = parseInt(id);
-
-  // Validate ID
-  if (typeof id != "number") {
-    return false;
-  }
-
-  // Construct Query
-  log = "id=" + id;
-
-  // Send pattern ID to server
-  sendRequest("loadPattern", log, loadResponse);
-}
-
-function loadResponse(response) {
-  response = JSON.parse(response);
-
-  if (response.code == "s") {
-    setLoadData(
-      response.id,
-      response.title,
-      response.author,
-      response.privacy,
-      response.src
-    );
-    setURL(loadedID, loadedTitle);
-
-    editorPattern.loadMatrix(response.pattern.matrix);
-    zoomExtents(editorPattern);
-
-    uiLayer.clearTooltip();
-    createInterface();
-    uiLayer.redrawCanvas();
-
-    overlay.hideOverlay();
-  }
-}
-
-function getLoadedData() {
-  document.getElementById("oTitle").value = loadedTitle;
-  document.getElementById("oAuthor").value = loadedAuthor;
-  document.getElementById("oPrivate").checked = loadedPrivacy;
-}
-
-function setLoadData(id, title, author, privacy, src) {
-  if (id === undefined) id = 0;
-  if (title === undefined) title = "";
-  if (author === undefined) author = "";
-  if (privacy === undefined) privacy = true;
-  if (src === undefined) src = "";
-
-  loadedID = id;
-  loadedTitle = title;
-  loadedAuthor = author;
-  loadedPrivacy = privacy;
-  loadedSRC = src;
-}
-
 // Image to Pattern Functions =========================================================================================
 // Objects
 function imageMatrix() {
@@ -2082,8 +1651,8 @@ var itpStage = 0;
 var itpProcessRow = 0;
 var itpProcessData;
 
-var itpSampleSpacingX = 0;
-var itpSampleSpacingY = 0;
+var sampleSpacingX = 0;
+var sampleSpacingY = 0;
 var sampleWidthArea = 0;
 var sampleHeightArea = 0;
 
@@ -2231,6 +1800,10 @@ function itpGetPixelRow() {
     itpProcessRow++;
   } else {
     setOverlay("newImagePattern");
+    itpStage = 3;
+
+    itpSetCanvas();
+    itpCanvasRedraw();
     return;
   }
 
@@ -2361,7 +1934,6 @@ function itpGeneratePattern() {
 }
 
 function itpSendToEditor() {
-  setLoadData();
   setURL();
 
   editorPattern.copyMatrix(itpPattern);
@@ -2980,24 +2552,9 @@ function mouseClickUI(id) {
       overlay.showOverlay();
       break;
 
-    case "toolboxOpen":
-      //setOverlay("open");
-      //overlay.showOverlay();
-      break;
-
-    case "toolboxSave":
-      //setOverlay("save");
-      //overlay.showOverlay();
-      break;
-
     case "toolboxSettings":
       setOverlay("settings");
       overlay.showOverlay();
-      break;
-
-    case "toolboxShare":
-      //setOverlay("share");
-      //overlay.showOverlay();
       break;
 
     case "cameraPan":
@@ -3034,7 +2591,7 @@ function setCursor(cursor) {
 
 // Overlay Functions ==================================================================================================
 
-function setOverlay(windowID) {
+function setOverlay(windowID: string) {
   const fragment = document.createDocumentFragment();
 
   var wDow = overlay.getScreen(windowID);
@@ -3067,45 +2624,30 @@ function setOverlay(windowID) {
 
   // Pane Actions
   switch (windowID) {
-    case "newShape":
-      patternShape = 0;
-      break;
-
     case "newImageSelect":
       itpStage = 0;
       itpSetCanvas();
       break;
 
-    case "newImagePattern":
-      itpStage = 3;
-
-      itpSetCanvas();
-      itpCanvasRedraw();
-      break;
-
-    case "open":
-      loadGallery();
-      break;
-
-    case "save":
-      getLoadedData();
-      break;
-
     case "settings":
       if (rulerSize == "large") {
-        document.getElementById("toggleSize").checked = true;
+        (document.getElementById("toggleSize") as HTMLInputElement).checked =
+          true;
       }
 
       if (drawEmpty === true) {
-        document.getElementById("toggleEmpty").checked = true;
+        (document.getElementById("toggleEmpty") as HTMLInputElement).checked =
+          true;
       }
 
       if (theme == 0) {
-        document.getElementById("toggleTheme").checked = true;
+        (document.getElementById("toggleTheme") as HTMLInputElement).checked =
+          true;
       }
 
       if (rulerUnits == "metric") {
-        document.getElementById("toggleUnits").checked = true;
+        (document.getElementById("toggleUnits") as HTMLInputElement).checked =
+          true;
       }
 
       break;
@@ -3120,127 +2662,61 @@ function setOverlay(windowID) {
   }
 }
 
-function makeOverlayPane(pane, type) {
-  if (type === undefined) type = true;
-
-  var xClick = "";
-  var xChange = "";
-  var xHover = "";
-  var tmp = "";
-
-  var c = "";
-  var z = 0;
-  var n = 0;
-
+function makeOverlayPane(pane: OverlayPane, isPane = true) {
   const outerDiv = document.createElement("div");
   let innerDiv = outerDiv;
-  if (type === true) {
+  if (isPane) {
     outerDiv.classList.add("overlayPane");
     const newDiv = document.createElement("div");
     newDiv.classList.add("htmlArea");
     outerDiv.append(newDiv);
     innerDiv = newDiv;
   } else {
-    outerDiv.classList.add("overlayPane");
-    outerDiv.classList.add("bar");
+    outerDiv.classList.add("overlayPane", "bar");
   }
 
   // Create Objects
-  for (let x = 0; x < pane.objects.length; x++) {
-    let content = "";
-    // Mouse Events
-    if (pane.objects[x].click !== false) {
-      xClick = 'onclick="' + pane.objects[x].click + '" ';
-    } else {
-      xClick = "";
-    }
-
-    if (pane.objects[x].hover !== false) {
-      xChange = 'onhover="' + pane.objects[x].hover + '" ';
-    } else {
-      xChange = "";
-    }
-
-    if (pane.objects[x].change !== false) {
-      xHover = 'onchange="' + pane.objects[x].change + '" ';
-    } else {
-      xHover = "";
-    }
-
+  for (const object of pane.objects) {
     // Write HTML
-    switch (pane.objects[x].type) {
-      case "anchor":
-        content +=
-          "<a href='" +
-          pane.objects[x].url +
-          "' target='" +
-          pane.objects[x].target +
-          "'>";
-        if (pane.objects[x].src) {
-          content += "<div class='anchorImage'>";
-          content +=
-            "<img src='" +
-            imagePath +
-            pane.objects[x].src +
-            "' alt='" +
-            pane.objects[x].string +
-            "' />";
-          content += "<p>" + pane.objects[x].string + "</p>";
-          content += "</div>";
-        } else {
-          content += "<p>" + pane.objects[x].string + "</p>";
-        }
-
-        content += "</a>";
+    switch (object.type) {
+      case "anchor": {
+        const a = document.createElement("a");
+        a.href = object.url;
+        a.textContent = object.string;
+        innerDiv.append(a);
         break;
+      }
 
-      case "brick":
-        content +=
-          "<a href='" +
-          pane.objects[x].url +
-          "' target='" +
-          pane.objects[x].target +
-          "'>";
-        content += "<div class='areaBrick backgroundTheme cursorPointer'>";
-        content +=
-          "<img src='" +
-          imagePath +
-          pane.objects[x].src +
-          "' alt='" +
-          pane.objects[x].title +
-          "' />";
-        content += "<p>" + pane.objects[x].title + "</p>";
-        content += "</div>";
-        content += "</a>";
+      case "brick": {
+        const a = document.createElement("a");
+        a.href = object.url;
+
+        const div = document.createElement("div");
+        div.classList.add("areaBrick", "backgroundTheme", "cursorPointer");
+        const img = document.createElement("img");
+        img.src = imagePath + object.src; // no `+ ".png"` for some reason
+        img.alt = object.title ?? "";
+        div.append(img);
+        const p = document.createElement("p");
+        p.textContent = object.title;
+        div.append(p);
+        a.append(div);
+        innerDiv.append(a);
         break;
+      }
 
       case "button": {
-        // content +=
-        //   "<div class='overlayButton' " + xClick + xChange + xHover + '">';
-        // content +=
-        //   "<img src='" +
-        //   imagePath +
-        //   pane.objects[x].src +
-        //   ".png' alt='" +
-        //   pane.objects[x].alt +
-        //   "' />";
-        // content += "<p>" + pane.objects[x].title + "</p>";
-        // content += "</div>";
-
         const button = document.createElement("button");
         button.classList.add("overlayButton");
-        button.addEventListener("click", () => {
-          console.log(pane.objects[x].click);
-          pane.objects[x].click();
-        });
+        button.addEventListener("click", object.click);
 
         const img = document.createElement("img");
-        img.src = imagePath + pane.objects[x].src + ".png";
-        if (pane.objects[x].alt) img.alt = pane.objects[x].alt;
+        img.src = imagePath + object.src + ".png";
+        if (object.alt) img.alt = object.alt;
         button.append(img);
 
         const p = document.createElement("p");
-        p.textContent = pane.objects[x].title;
+        p.textContent = object.title;
         button.append(p);
 
         innerDiv.append(button);
@@ -3248,395 +2724,275 @@ function makeOverlayPane(pane, type) {
         break;
       }
 
-      case "canvas":
-        content +=
-          "<canvas id='" +
-          pane.objects[x].id +
-          "' class='overlayCanvas' " +
-          xClick +
-          xChange +
-          xHover +
-          "/>";
+      case "canvas": {
+        const canvas = document.createElement("canvas");
+        canvas.id = object.id;
+        canvas.classList.add("overlayCanvas");
+        innerDiv.append(canvas);
         break;
+      }
 
-      case "dropdown":
-        z = pane.objects[x].data.length;
+      case "dropdown": {
+        const div = document.createElement("div");
+        div.classList.add("inputDIV");
 
-        content += "<div class='inputDIV'>";
-        content +=
-          "<label for='" +
-          pane.objects[x].id +
-          "'>" +
-          pane.objects[x].label +
-          "</label>";
+        const label = document.createElement("label");
+        label.textContent = object.label;
+        label.htmlFor = object.id;
+        div.append(label);
 
-        content +=
-          "<select id='" +
-          pane.objects[x].id +
-          "'" +
-          xClick +
-          xChange +
-          xHover +
-          ">";
-        for (n = 0; n < z; n++) {
-          if (n == activeColour) {
-            tmp = " selected";
-          } else {
-            tmp = "";
-          }
+        const select = document.createElement("select");
+        select.id = object.id;
+        select.addEventListener("change", object.change);
+        div.append(select);
 
-          content +=
-            "<option value='" +
-            n +
-            "'" +
-            tmp +
-            ">" +
-            pane.objects[x].data[n].name +
-            "</option>";
+        for (let n = 0; n < object.data.length; n++) {
+          const option = document.createElement("option");
+          option.value = n.toString(); // dunno why it's the number instead of the name
+          option.textContent = object.data[n].name;
+          select.append(option);
         }
-        content += "</select>";
-        content += "</div>";
+
+        innerDiv.append(div);
         break;
+      }
 
-      //case "htmlArea":
-      //content += "<div id='htmlArea'></div>";
-      //break;
-
-      case "image":
-        content +=
-          "<img src='" +
-          imagePath +
-          pane.objects[x].src +
-          "' alt='" +
-          pane.objects[x].alt +
-          "' " +
-          xClick +
-          xChange +
-          xHover +
-          "/>";
+      case "inputButton": {
+        const button = document.createElement("button");
+        button.classList.add("overlayButton");
+        button.addEventListener("click", object.click);
+        if (object.id) button.id = object.id;
+        button.textContent = object.value;
+        innerDiv.append(button);
         break;
+      }
 
-      case "inputButton":
-        if (pane.objects[x].enabled === false) {
-          tmp = " disabled";
+      case "inputCheckbox": {
+        const div = document.createElement("div");
+        div.classList.add("inputDIV");
+
+        const label = document.createElement("label");
+        label.textContent = object.label;
+        label.htmlFor = object.id;
+        div.append(label);
+
+        const input = document.createElement("input");
+        input.id = object.id;
+        input.type = "checkbox";
+        input.checked = object.checked;
+        // no events
+        div.append(input);
+
+        innerDiv.append(div);
+        break;
+      }
+
+      case "inputFile": {
+        // content += "<div class='inputDIV'>";
+        // content +=
+        //   "<label for='" + object.id + "'>" + object.label + "</label>";
+        // content +=
+        //   "<input id='" +
+        //   object.id +
+        //   "' type='file' accept='" +
+        //   object.accepted +
+        //   "' " +
+        //   xClick +
+        //   xChange +
+        //   xHover +
+        //   "/>";
+        // content += "</div>";
+
+        const div = document.createElement("div");
+        div.classList.add("inputDIV");
+
+        // const label = document.createElement("label");
+        // label.textContent = object.label;
+        // label.htmlFor = object.id;
+        // div.append(label);
+
+        const input = document.createElement("input");
+        input.id = object.id;
+        input.type = "file";
+        input.accept = object.accepted;
+        input.addEventListener("change", object.change);
+        div.append(input);
+
+        innerDiv.append(div);
+        break;
+      }
+
+      case "inputRadio": {
+        // if (object.src) {
+        //   tmp =
+        //     "<img src='" +
+        //     imagePath +
+        //     object.src +
+        //     "' alt='" +
+        //     object.alt +
+        //     "' />";
+        //   c = "hidden";
+        // } else {
+        //   tmp = object.label;
+        //   c = "";
+        // }
+
+        // tmp = "<label for='" + object.id + "'>" + tmp + "</label>";
+
+        // if (object.checked === true) {
+        //   n = "checked ";
+        // } else {
+        //   n = "";
+        // }
+
+        // content += "<div class='inputDIV'>";
+        // if (object.src === false) {
+        //   content += tmp;
+        // }
+
+        // content +=
+        //   "<input id='" +
+        //   object.id +
+        //   "' type='radio' " +
+        //   n +
+        //   "class='" +
+        //   c +
+        //   "' name='" +
+        //   object.name +
+        //   "' value='" +
+        //   object.value +
+        //   "' " +
+        //   xClick +
+        //   xChange +
+        //   xHover +
+        //   "/>";
+
+        // if (object.src !== false) {
+        //   content += tmp;
+        // }
+
+        // content += "</div>";
+
+        const div = document.createElement("div");
+        div.classList.add("inputDIV");
+
+        const input = document.createElement("input");
+        input.id = object.id;
+        input.type = "radio";
+        input.name = object.name;
+        input.value = object.value.toString();
+
+        if (object.src) {
+          input.classList.add("hidden");
+        }
+
+        if (object.checked === true) {
+          input.checked = true;
+        }
+        div.appendChild(input);
+
+        const label = document.createElement("label");
+        label.setAttribute("for", object.id);
+
+        if (object.src) {
+          const img = document.createElement("img");
+          img.src = imagePath + object.src;
+          img.alt = object.alt ?? "";
+          label.append(img);
         } else {
-          tmp = "";
+          label.textContent = object.label;
         }
 
-        content +=
-          "<input id='" +
-          pane.objects[x].id +
-          "'" +
-          tmp +
-          " type='button' value='" +
-          pane.objects[x].value +
-          "' " +
-          xClick +
-          xChange +
-          xHover +
-          "/>";
-        break;
+        div.appendChild(label);
 
-      case "inputCheckbox":
-        if (pane.objects[x].checked === true) {
-          n = "checked ";
-        } else {
-          n = "";
+        innerDiv.append(div);
+        break;
+      }
+
+      case "inputNumber": {
+        const div = document.createElement("div");
+        div.classList.add("inputDIV");
+
+        const label = document.createElement("label");
+        label.setAttribute("for", object.id);
+        label.textContent = object.label;
+        div.appendChild(label);
+
+        const input = document.createElement("input");
+        input.id = object.id;
+        input.type = "number";
+        if (object.minValue) input.min = object.minValue.toString();
+        if (object.maxValue) input.max = object.maxValue.toString();
+        if (object.increment) input.step = object.increment.toString();
+        if (object.value) input.value = object.value.toString();
+
+        if (object.change) {
+          input.addEventListener("change", object.change);
         }
 
-        content += "<div class='inputDIV'>";
-        content +=
-          "<label for='" +
-          pane.objects[x].id +
-          "'>" +
-          pane.objects[x].label +
-          "</label>";
-        content +=
-          "<input id='" +
-          pane.objects[x].id +
-          "' type='checkbox' " +
-          n +
-          "name='" +
-          pane.objects[x].name +
-          "' value='" +
-          pane.objects[x].value +
-          "' " +
-          xClick +
-          xChange +
-          xHover +
-          "/>";
-        content +=
-          "<div id='" + pane.objects[x].id + "Error' class='inputError'></div>";
-        content += "</div>";
+        div.appendChild(input);
+        innerDiv.append(div);
         break;
+      }
 
-      case "inputFile":
-        content += "<div class='inputDIV'>";
-        content +=
-          "<label for='" +
-          pane.objects[x].id +
-          "'>" +
-          pane.objects[x].label +
-          "</label>";
-        content +=
-          "<input id='" +
-          pane.objects[x].id +
-          "' type='file' accept='" +
-          pane.objects[x].accepted +
-          "' " +
-          xClick +
-          xChange +
-          xHover +
-          "/>";
-        content += "</div>";
+      case "inputPassword": {
+        const div = document.createElement("div");
+        div.classList.add("inputDIV");
+
+        const label = document.createElement("label");
+        label.setAttribute("for", object.id);
+        label.textContent = object.label;
+        div.appendChild(label);
+
+        const input = document.createElement("input");
+        input.id = object.id;
+        input.type = "password";
+        input.placeholder = object.placeholder;
+
+        div.appendChild(input);
+        innerDiv.append(div);
         break;
+      }
 
-      case "inputRadio":
-        if (pane.objects[x].src !== false) {
-          tmp =
-            "<img src='" +
-            imagePath +
-            pane.objects[x].src +
-            "' alt='" +
-            pane.objects[x].alt +
-            "' />";
-          c = "hidden";
-        } else {
-          tmp = pane.objects[x].label;
-          c = "";
-        }
+      case "inputText": {
+        const div = document.createElement("div");
+        div.classList.add("inputDIV");
 
-        tmp = "<label for='" + pane.objects[x].id + "'>" + tmp + "</label>";
+        const label = document.createElement("label");
+        label.setAttribute("for", object.id);
+        label.textContent = object.label;
+        div.appendChild(label);
 
-        if (pane.objects[x].checked === true) {
-          n = "checked ";
-        } else {
-          n = "";
-        }
+        const input = document.createElement("input");
+        input.id = object.id;
+        input.placeholder = object.placeholder;
 
-        content += "<div class='inputDIV'>";
-        if (pane.objects[x].src === false) {
-          content += tmp;
-        }
-
-        content +=
-          "<input id='" +
-          pane.objects[x].id +
-          "' type='radio' " +
-          n +
-          "class='" +
-          c +
-          "' name='" +
-          pane.objects[x].name +
-          "' value='" +
-          pane.objects[x].value +
-          "' " +
-          xClick +
-          xChange +
-          xHover +
-          "/>";
-
-        if (pane.objects[x].src !== false) {
-          content += tmp;
-        }
-
-        content += "</div>";
+        div.appendChild(input);
+        innerDiv.append(div);
         break;
-
-      case "inputNumber":
-        content += "<div class='inputDIV'>";
-        content +=
-          "<label for='" +
-          pane.objects[x].id +
-          "'>" +
-          pane.objects[x].label +
-          "</label>";
-        content +=
-          "<input id='" +
-          pane.objects[x].id +
-          "' type='number' min='" +
-          pane.objects[x].minValue +
-          "' max='" +
-          pane.objects[x].maxValue +
-          "' step='" +
-          pane.objects[x].increment +
-          "' placeholder='" +
-          pane.objects[x].placeholder +
-          "' value='" +
-          pane.objects[x].value +
-          "' " +
-          xClick +
-          xChange +
-          xHover +
-          "/>";
-        content += "</div>";
-        break;
-
-      case "inputPassword":
-        content += "<div class='inputDIV'>";
-        content +=
-          "<label for='" +
-          pane.objects[x].id +
-          "'>" +
-          pane.objects[x].label +
-          "</label>";
-        content +=
-          "<input id='" +
-          pane.objects[x].id +
-          "' type='password' length='" +
-          pane.objects[x].length +
-          "' name='" +
-          pane.objects[x].name +
-          "' placeholder='" +
-          pane.objects[x].placeholder +
-          "' value='" +
-          pane.objects[x].value +
-          "' " +
-          xClick +
-          xChange +
-          xHover +
-          "/>";
-        content +=
-          "<div id='" + pane.objects[x].id + "Error' class='inputError'></div>";
-        content += "</div>";
-        break;
-
-      case "inputText":
-        content += "<div class='inputDIV'>";
-        content +=
-          "<label for='" +
-          pane.objects[x].id +
-          "'>" +
-          pane.objects[x].label +
-          "</label>";
-        content +=
-          "<input id='" +
-          pane.objects[x].id +
-          "' type='text' length='" +
-          pane.objects[x].length +
-          "' name='" +
-          pane.objects[x].name +
-          "' placeholder='" +
-          pane.objects[x].placeholder +
-          "' value='" +
-          pane.objects[x].value +
-          "' " +
-          xClick +
-          xChange +
-          xHover +
-          "/>";
-        content +=
-          "<div id='" + pane.objects[x].id + "Error' class='inputError'></div>";
-        content += "</div>";
-        break;
+      }
 
       case "inputWrapper":
-        if (pane.objects[x].state === 1) {
-          content += "<div class='inputWrapper'>";
-        } else {
-          content += "</div>";
-        }
-        break;
-
-      case "share":
-        // URL
-        content +=
-          "<input type='text' value='https://scalemail.lairoftheraven.uk?id=" +
-          loadedID +
-          "' onclick='this.select();' />";
-
-        // E-Mail
-        content +=
-          '<a class="shareButton" href="mailto:?subject=Check%20out%20my%20scalemail%20inlay!&amp;body=http%3A%2F%2Fscalemail.lairoftheraven.uk%3Fid%3D' +
-          loadedID +
-          '" target="_self" aria-label="Share by E-Mail">';
-        content +=
-          '<div class="resp-sharing-button resp-sharing-button--email resp-sharing-button--large"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">';
-        content +=
-          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 4H2C.9 4 0 4.9 0 6v12c0 1.1.9 2 2 2h20c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM7.25 14.43l-3.5 2c-.08.05-.17.07-.25.07-.17 0-.34-.1-.43-.25-.14-.24-.06-.55.18-.68l3.5-2c.24-.14.55-.06.68.18.14.24.06.55-.18.68zm4.75.07c-.1 0-.2-.03-.27-.08l-8.5-5.5c-.23-.15-.3-.46-.15-.7.15-.22.46-.3.7-.14L12 13.4l8.23-5.32c.23-.15.54-.08.7.15.14.23.07.54-.16.7l-8.5 5.5c-.08.04-.17.07-.27.07zm8.93 1.75c-.1.16-.26.25-.43.25-.08 0-.17-.02-.25-.07l-3.5-2c-.24-.13-.32-.44-.18-.68s.44-.32.68-.18l3.5 2c.24.13.32.44.18.68z"/></svg></div>Share by E-Mail</div>';
-        content += "</a>";
-
-        // Facebook
-        content +=
-          '<a class="shareButton" href="https://facebook.com/sharer/sharer.php?u=http%3A%2F%2Fscalemail.lairoftheraven.uk%3Fid%3D' +
-          loadedID +
-          '" target="_blank" aria-label="Share on Facebook">';
-        content +=
-          '<div class="resp-sharing-button resp-sharing-button--facebook resp-sharing-button--large"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">';
-        content +=
-          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18.77 7.46H14.5v-1.9c0-.9.6-1.1 1-1.1h3V.5h-4.33C10.24.5 9.5 3.44 9.5 5.32v2.15h-3v4h3v12h5v-12h3.85l.42-4z"/></svg>';
-        content += "</div>Share on Facebook</div>";
-        content += "</a>";
-
-        // Google+
-        content +=
-          '<a class="shareButton" href="https://plus.google.com/share?url=http%3A%2F%2Fscalemail.lairoftheraven.uk%3Fid%3D' +
-          loadedID +
-          '" target="_blank" aria-label="Share on Google+">';
-        content +=
-          '<div class="resp-sharing-button resp-sharing-button--google resp-sharing-button--large"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">';
-        content +=
-          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.37 12.93c-.73-.52-1.4-1.27-1.4-1.5 0-.43.03-.63.98-1.37 1.23-.97 1.9-2.23 1.9-3.57 0-1.22-.36-2.3-1-3.05h.5c.1 0 .2-.04.28-.1l1.36-.98c.16-.12.23-.34.17-.54-.07-.2-.25-.33-.46-.33H7.6c-.66 0-1.34.12-2 .35-2.23.76-3.78 2.66-3.78 4.6 0 2.76 2.13 4.85 5 4.9-.07.23-.1.45-.1.66 0 .43.1.83.33 1.22h-.08c-2.72 0-5.17 1.34-6.1 3.32-.25.52-.37 1.04-.37 1.56 0 .5.13.98.38 1.44.6 1.04 1.84 1.86 3.55 2.28.87.23 1.82.34 2.8.34.88 0 1.7-.1 2.5-.34 2.4-.7 3.97-2.48 3.97-4.54 0-1.97-.63-3.15-2.33-4.35zm-7.7 4.5c0-1.42 1.8-2.68 3.9-2.68h.05c.45 0 .9.07 1.3.2l.42.28c.96.66 1.6 1.1 1.77 1.8.05.16.07.33.07.5 0 1.8-1.33 2.7-3.96 2.7-1.98 0-3.54-1.23-3.54-2.8zM5.54 3.9c.33-.38.75-.58 1.23-.58h.05c1.35.05 2.64 1.55 2.88 3.35.14 1.02-.08 1.97-.6 2.55-.32.37-.74.56-1.23.56h-.03c-1.32-.04-2.63-1.6-2.87-3.4-.13-1 .08-1.92.58-2.5zM23.5 9.5h-3v-3h-2v3h-3v2h3v3h2v-3h3"/></svg>';
-        content += "</div>Share on Google+</div>";
-        content += "</a>";
-
-        // Pinterest
-        content +=
-          '<a class="shareButton" href="https://pinterest.com/pin/create/button/?url=http%3A%2F%2Fscalemail.lairoftheraven.uk%3Fid%3D' +
-          loadedID +
-          "&amp;media=http%3A%2F%2Fscalemail.lairoftheraven.uk%2Fpatterns%2F" +
-          loadedID +
-          '.jpg;description=Check%20out%20my%20scalemail%20inlay!" target="_blank" aria-label="Share on Pinterest">';
-        content +=
-          '<div class="resp-sharing-button resp-sharing-button--pinterest resp-sharing-button--large"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">';
-        content +=
-          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.14.5C5.86.5 2.7 5 2.7 8.75c0 2.27.86 4.3 2.7 5.05.3.12.57 0 .66-.33l.27-1.06c.1-.32.06-.44-.2-.73-.52-.62-.86-1.44-.86-2.6 0-3.33 2.5-6.32 6.5-6.32 3.55 0 5.5 2.17 5.5 5.07 0 3.8-1.7 7.02-4.2 7.02-1.37 0-2.4-1.14-2.07-2.54.4-1.68 1.16-3.48 1.16-4.7 0-1.07-.58-1.98-1.78-1.98-1.4 0-2.55 1.47-2.55 3.42 0 1.25.43 2.1.43 2.1l-1.7 7.2c-.5 2.13-.08 4.75-.04 5 .02.17.22.2.3.1.14-.18 1.82-2.26 2.4-4.33.16-.58.93-3.63.93-3.63.45.88 1.8 1.65 3.22 1.65 4.25 0 7.13-3.87 7.13-9.05C20.5 4.15 17.18.5 12.14.5z"/></svg>';
-        content += "</div>Share on Pinterest</div>";
-        content += "</a>";
-
-        // Reddit
-        content +=
-          '<a class="shareButton" href="https://reddit.com/submit/?url=http%3A%2F%2Fscalemail.lairoftheraven.uk%3Fid%3D' +
-          loadedID +
-          '" target="_blank" aria-label="Share on Reddit">';
-        content +=
-          '<div class="resp-sharing-button resp-sharing-button--reddit resp-sharing-button--large"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">';
-        content +=
-          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 11.5c0-1.65-1.35-3-3-3-.96 0-1.86.48-2.42 1.24-1.64-1-3.75-1.64-6.07-1.72.08-1.1.4-3.05 1.52-3.7.72-.4 1.73-.24 3 .5C17.2 6.3 18.46 7.5 20 7.5c1.65 0 3-1.35 3-3s-1.35-3-3-3c-1.38 0-2.54.94-2.88 2.22-1.43-.72-2.64-.8-3.6-.25-1.64.94-1.95 3.47-2 4.55-2.33.08-4.45.7-6.1 1.72C4.86 8.98 3.96 8.5 3 8.5c-1.65 0-3 1.35-3 3 0 1.32.84 2.44 2.05 2.84-.03.22-.05.44-.05.66 0 3.86 4.5 7 10 7s10-3.14 10-7c0-.22-.02-.44-.05-.66 1.2-.4 2.05-1.54 2.05-2.84zM2.3 13.37C1.5 13.07 1 12.35 1 11.5c0-1.1.9-2 2-2 .64 0 1.22.32 1.6.82-1.1.85-1.92 1.9-2.3 3.05zm3.7.13c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm9.8 4.8c-1.08.63-2.42.96-3.8.96-1.4 0-2.74-.34-3.8-.95-.24-.13-.32-.44-.2-.68.15-.24.46-.32.7-.18 1.83 1.06 4.76 1.06 6.6 0 .23-.13.53-.05.67.2.14.23.06.54-.18.67zm.2-2.8c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm5.7-2.13c-.38-1.16-1.2-2.2-2.3-3.05.38-.5.97-.82 1.6-.82 1.1 0 2 .9 2 2 0 .84-.53 1.57-1.3 1.87z"/></svg>';
-        content += "</div>Share on Reddit</div>";
-        content += "</a>";
-
-        // Twitter
-        content +=
-          '<a class="shareButton" href="https://twitter.com/intent/tweet/?text=Check%20out%20my%20scalemail%20inlay!&amp;url=http%3A%2F%2Fscalemail.lairoftheraven.uk%3Fid%3D' +
-          loadedID +
-          '" target="_blank" aria-label="Share on Twitter">';
-        content +=
-          '<div class="resp-sharing-button resp-sharing-button--twitter resp-sharing-button--large"><div aria-hidden="true" class="resp-sharing-button__icon resp-sharing-button__icon--solid">';
-        content +=
-          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23.44 4.83c-.8.37-1.5.38-2.22.02.93-.56.98-.96 1.32-2.02-.88.52-1.86.9-2.9 1.1-.82-.88-2-1.43-3.3-1.43-2.5 0-4.55 2.04-4.55 4.54 0 .36.03.7.1 1.04-3.77-.2-7.12-2-9.36-4.75-.4.67-.6 1.45-.6 2.3 0 1.56.8 2.95 2 3.77-.74-.03-1.44-.23-2.05-.57v.06c0 2.2 1.56 4.03 3.64 4.44-.67.2-1.37.2-2.06.08.58 1.8 2.26 3.12 4.25 3.16C5.78 18.1 3.37 18.74 1 18.46c2 1.3 4.4 2.04 6.97 2.04 8.35 0 12.92-6.92 12.92-12.93 0-.2 0-.4-.02-.6.9-.63 1.96-1.22 2.56-2.14z"/></svg>';
-        content += "</div>Share on Twitter</div>";
-        content += "</a>";
-
+        // TODO: Definitely remove this
         break;
 
       case "text": {
-        if (pane.objects[x].title) {
+        if (object.title) {
           const titleNode = document.createElement("h2");
-          titleNode.textContent = pane.objects[x].title;
+          titleNode.textContent = object.title;
 
           innerDiv.appendChild(titleNode);
         }
 
-        if (typeof pane.objects[x].string == "string") {
+        if (typeof object.string == "string") {
           const textNode = document.createElement("p");
-          textNode.textContent = pane.objects[x].string;
+          textNode.textContent = object.string;
 
           innerDiv.appendChild(textNode);
-        } else if (Array.isArray(pane.objects[x].string)) {
-          for (let c = 0; c < pane.objects[x].string.length; c++) {
+        } else if (Array.isArray(object.string)) {
+          for (let c = 0; c < object.string.length; c++) {
             const textNode = document.createElement("p");
-            textNode.textContent = pane.objects[x].string[c];
+            textNode.textContent = object.string[c];
 
             innerDiv.appendChild(textNode);
           }
@@ -3645,30 +3001,41 @@ function makeOverlayPane(pane, type) {
         break;
       }
 
-      case "toggle":
-        content += "<h2>" + pane.objects[x].title + "</h2>";
-        content +=
-          "<p class='toggleText left'>" + pane.objects[x].string[0] + "</p>";
+      case "toggle": {
+        const h2 = document.createElement("h2");
+        h2.textContent = object.title;
+        innerDiv.appendChild(h2);
 
-        content += "<label class='toggle'>";
-        content +=
-          "<input id='" +
-          pane.objects[x].id +
-          "' type='checkbox' onchange='" +
-          pane.objects[x].change +
-          "'>";
-        content += "<div class='slider'></div>";
-        content += "</label>";
+        const pl = document.createElement("p");
+        pl.classList.add("toggleText", "left");
+        pl.textContent = object.string[0];
+        innerDiv.appendChild(pl);
 
-        content +=
-          "<p class='toggleText right'>" + pane.objects[x].string[1] + "</p>";
+        const toggle = document.createElement("label");
+        toggle.classList.add("toggle");
+
+        const input = document.createElement("input");
+        input.id = object.id;
+        input.type = "checkbox";
+        input.onchange = object.change;
+        toggle.appendChild(input);
+
+        const div = document.createElement("div");
+        div.classList.add("slider");
+        toggle.appendChild(div);
+        innerDiv.appendChild(toggle);
+
+        const pr = document.createElement("p");
+        pr.classList.add("toggleText", "right");
+        pr.textContent = object.string[1];
+        innerDiv.appendChild(pr);
         break;
+      }
 
       default:
-        console.log("Unhandled object: " + pane.objects[x].type);
+        console.log("Unhandled object: " + object);
         break;
     }
-    innerDiv.append(...stringToElements(content));
   }
 
   return outerDiv;
@@ -3688,7 +3055,10 @@ function buildOverlays() {
     type: "button",
     title: "New from Shape...",
     src: "buttonNew",
-    click: () => setOverlay("newShape"),
+    click: () => {
+      setOverlay("newShape");
+      patternShape = 0;
+    },
   };
 
   nWindow.addObjectToBar(nObject);
@@ -3817,7 +3187,7 @@ function buildOverlays() {
   nObject = {
     type: "dropdown",
     id: "o-Colour",
-    change: "setActiveColour(this.value)",
+    change: (e) => setActiveColour((e.target as HTMLSelectElement).value),
     data: palette.colours,
     label: "Colour",
   };
@@ -3845,18 +3215,17 @@ function buildOverlays() {
     id: "o-Prev",
     label: "Previous",
     value: "Previous",
-    click: "setOverlay('new')",
+    click: () => setOverlay("new"),
   };
 
   nWindow.addObjectToBar(nObject);
 
   // Create Button
   nObject = {
-    // FIXME: why no `id`?
     type: "inputButton",
     label: "Create Pattern",
     value: "Create Pattern",
-    click: "newFromShape()",
+    click: newFromShape,
   };
 
   nWindow.addObjectToBar(nObject);
@@ -3910,7 +3279,19 @@ function buildOverlays() {
     type: "inputFile",
     id: "o-File",
     accepted: "image/*",
-    change: "itpImageSelect(this.files[0])",
+    change: (e) => {
+      const files = (e.target as HTMLInputElement).files;
+
+      if (!files) {
+        return;
+      }
+
+      if (files.length === 0) {
+        return;
+      }
+
+      itpImageSelect(files[0]);
+    },
   };
 
   nWindow.addObjectToBar(nObject);
@@ -3949,7 +3330,7 @@ function buildOverlays() {
     id: "o-Prev",
     label: "Previous",
     value: "Previous",
-    click: "setOverlay('new')",
+    click: () => setOverlay("new"),
   };
 
   nWindow.addObjectToBar(nObject);
@@ -3960,7 +3341,7 @@ function buildOverlays() {
     id: "o-Next",
     label: "Process",
     value: "Process",
-    click: "itpImageProcess()",
+    click: itpImageProcess,
   };
 
   nWindow.addObjectToBar(nObject);
@@ -4001,7 +3382,7 @@ function buildOverlays() {
     id: "o-Width",
     label: "Width",
     value: 10,
-    change: "itpCanvasRedraw()",
+    change: itpCanvasRedraw,
   };
 
   nWindow.addObjectToBar(nObject);
@@ -4039,7 +3420,7 @@ function buildOverlays() {
     id: "o-Prev",
     label: "Previous",
     value: "Previous",
-    click: "setOverlay('newImageSelect')",
+    click: () => setOverlay("newImageSelect"),
   };
 
   nWindow.addObjectToBar(nObject);
@@ -4050,7 +3431,7 @@ function buildOverlays() {
     id: "o-Next",
     label: "Build",
     value: "Build",
-    click: "itpGeneratePattern()",
+    click: itpGeneratePattern,
   };
 
   nWindow.addObjectToBar(nObject);
@@ -4089,489 +3470,6 @@ function buildOverlays() {
 
   overlay.addScreen(nWindow);
 
-  // Open
-  nWindow = new OverlayScreen("open", "Browse Gallery");
-
-  // Bar
-  // Heading
-  nObject = {
-    type: "text",
-    string: [
-      "Enter some search terms to explore the pattern gallery. If you are looking for a pattern that has been set to private, you need to enter the exact title.",
-      "Looking for Scalemail Banner Templates? Search for the title 'Template' or the author 'Lair of the Raven'.",
-    ],
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Title
-  // Wrapper (Open)
-  nObject = {
-    type: "inputWrapper",
-    state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Title
-  nObject = {
-    type: "inputText",
-    id: "loadTitle",
-    label: "Title",
-    placeholder: "Search by title",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Close)
-  nObject = {
-    type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Author
-  // Wrapper (Open)
-  nObject = {
-    type: "inputWrapper",
-    state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Author
-  nObject = {
-    type: "inputText",
-    id: "loadAuthor",
-    label: "Author",
-    placeholder: "Search by author",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Close)
-  nObject = {
-    type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Scales
-  // Wrapper (Open)
-  nObject = {
-    type: "inputWrapper",
-    state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Minimum
-  nObject = {
-    type: "inputNumber",
-    id: "loadMin",
-    label: "Min. Scales",
-    value: 0,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Maximum
-  nObject = {
-    type: "inputNumber",
-    id: "loadMax",
-    label: "Max. Scales",
-    maxValue: 9999,
-    value: 9999,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Close)
-  nObject = {
-    type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Order
-  // Wrapper (Open)
-  nObject = {
-    type: "inputWrapper",
-    state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Title A - Z
-  nObject = {
-    type: "inputRadio",
-    id: "loadTitleAZ",
-    label: "Title A-Z",
-    name: "sort",
-    value: "taz",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Title Z - A
-  nObject = {
-    type: "inputRadio",
-    id: "loadTitleZA",
-    label: "Title Z-A",
-    name: "sort",
-    value: "tza",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Close)
-  nObject = {
-    type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Open)
-  nObject = {
-    type: "inputWrapper",
-    state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Author A - Z
-  nObject = {
-    type: "inputRadio",
-    id: "loadAuthorAZ",
-    label: "Author A-Z",
-    name: "sort",
-    value: "aaz",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Author Z - A
-  nObject = {
-    type: "inputRadio",
-    id: "loadAuthorZA",
-    label: "Author Z-A",
-    name: "sort",
-    value: "aza",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Close)
-  nObject = {
-    type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Open)
-  nObject = {
-    type: "inputWrapper",
-    state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Scales 0 - 9
-  nObject = {
-    type: "inputRadio",
-    id: "loadScales09",
-    label: "Smallest",
-    name: "sort",
-    value: "saz",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Scales 9 - 0
-  nObject = {
-    type: "inputRadio",
-    id: "loadAuthorZA",
-    label: "Largest",
-    name: "sort",
-    value: "sza",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Close)
-  nObject = {
-    type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Open)
-  nObject = {
-    type: "inputWrapper",
-    state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Date New - Old
-  nObject = {
-    type: "inputRadio",
-    id: "loadDateAZ",
-    checked: true,
-    label: "Newest",
-    name: "sort",
-    value: "dno",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Date Old - New
-  nObject = {
-    type: "inputRadio",
-    id: "loadDateZA",
-    label: "Oldest",
-    name: "sort",
-    value: "don",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Close)
-  nObject = {
-    type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Search
-  // Wrapper (Open)
-  nObject = {
-    type: "inputWrapper",
-    state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Submit
-  nObject = {
-    type: "inputButton",
-    id: "loadButton",
-    label: "Search",
-    value: "Search",
-    click: "loadGallery()",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Close)
-  nObject = {
-    type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Pane
-  // HTML Area
-  //nObject = new overlayObject();
-
-  //nObject.type = "htmlArea";
-  //nObject.id = "galleryArea";
-
-  //nWindow.addObjectToPane(nObject);
-
-  overlay.addScreen(nWindow);
-
-  // Save
-  nWindow = new OverlayScreen("save", "Save Pattern");
-
-  // Bar
-  // Title
-  nObject = {
-    type: "text",
-    title: "Details",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Open)
-  nObject = {
-    type: "inputWrapper",
-    state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Title Input
-  nObject = {
-    type: "inputText",
-    id: "oTitle",
-    label: "Title",
-    placeholder: "Name your pattern",
-    value: "",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Close)
-  nObject = {
-    type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Open)
-  nObject = {
-    type: "inputWrapper",
-    state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Author Input
-  nObject = {
-    type: "inputText",
-    id: "oAuthor",
-    label: "Author",
-    placeholder: "Use a pen name",
-    value: "",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Close)
-  nObject = {
-    type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Open)
-  nObject = {
-    type: "inputWrapper",
-    state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Password Input
-  nObject = {
-    type: "inputPassword",
-    id: "oPassword",
-    label: "Editing Password",
-    placeholder: "To keep your Pattern safe",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Close)
-  nObject = {
-    type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Open)
-  nObject = {
-    type: "inputWrapper",
-    state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Title Input
-  nObject = {
-    type: "inputCheckbox",
-    id: "oPrivate",
-    label: "Show in Gallery",
-    checked: true,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Close)
-  nObject = {
-    type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Open)
-  nObject = {
-    type: "inputWrapper",
-    state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Title Input
-  nObject = {
-    type: "inputButton",
-    id: "oSave",
-    focused: true,
-    label: "Save",
-    value: "Save",
-    click: "savePattern()",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Wrapper (Close)
-  nObject = {
-    type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Pane
-  // Title Information
-  nObject = {
-    type: "text",
-    title: "Title",
-    string: [
-      "Give your pattern a meaningful name that will allow you to find it later.",
-    ],
-  };
-
-  nWindow.addObjectToPane(nObject);
-
-  // Author Information
-  nObject = {
-    type: "text",
-    title: "Author",
-    string: [
-      "Take credit for your creation! Pen names are unique, so use it for all of your patterns.",
-    ],
-  };
-
-  nWindow.addObjectToPane(nObject);
-
-  // Password Information
-  nObject = {
-    type: "text",
-    title: "Password",
-    string: [
-      "Saving a new pattern? Create a memorable password to protect the design.",
-      "Updating an existing pattern? Enter your editing password.",
-      "If you forget your password, you'll need to contact us to get it reset.",
-    ],
-  };
-
-  nWindow.addObjectToPane(nObject);
-
-  // Gallery Information
-  nObject = {
-    type: "text",
-    title: "Gallery",
-    string: [
-      "Let the world see your design in the gallery, or keep it all to yourself.",
-      "Anyone with the exact title of your design will be able to find it using search.",
-    ],
-  };
-
-  nWindow.addObjectToPane(nObject);
-
-  overlay.addScreen(nWindow);
-
   // Settings
   nWindow = new OverlayScreen("settings", "Settings");
 
@@ -4593,7 +3491,7 @@ function buildOverlays() {
     type: "toggle",
     title: "Scale Size",
     string: ["Small", "Large"],
-    change: "toggleSize()",
+    change: toggleSize,
   };
 
   nWindow.addObjectToPane(nObject);
@@ -4604,7 +3502,7 @@ function buildOverlays() {
     type: "toggle",
     title: "Empty Scales",
     string: ["Hide", "Show"],
-    change: "toggleEmpty()",
+    change: toggleEmpty,
   };
 
   nWindow.addObjectToPane(nObject);
@@ -4615,7 +3513,7 @@ function buildOverlays() {
     type: "toggle",
     title: "Theme",
     string: ["Light", "Dark"],
-    change: "toggleTheme()",
+    change: toggleTheme,
   };
 
   nWindow.addObjectToPane(nObject);
@@ -4626,7 +3524,7 @@ function buildOverlays() {
     type: "toggle",
     title: "Measurement Units",
     string: ["Imperial", "Metric"],
-    change: "toggleUnits()",
+    change: toggleUnits,
   };
 
   nWindow.addObjectToPane(nObject);
@@ -4639,31 +3537,6 @@ function buildOverlays() {
   // Bar
 
   // Pane
-
-  overlay.addScreen(nWindow);
-
-  // Share
-  nWindow = new OverlayScreen("share", "Share Pattern");
-
-  // Bar
-  nObject = {
-    type: "text",
-    title: "Share to Social Media",
-    string: [
-      "Want to show your pattern to the world? Use your pattern URL from the address bar, or use any of these useful buttons!",
-      "If you don't see your pattern URL, you need to save your pattern before you can share it.",
-    ],
-  };
-
-  nWindow.addObjectToBar(nObject);
-
-  // Pane
-  // URL
-  nObject = {
-    type: "share",
-  };
-
-  nWindow.addObjectToPane(nObject);
 
   overlay.addScreen(nWindow);
 
@@ -5420,7 +4293,6 @@ function newFromShape() {
 
   editorPattern.clearMatrix();
   newPattern(editorPattern, width, height, shape);
-  setLoadData();
   setURL();
   zoomExtents(editorPattern);
   createInterface();
@@ -5910,17 +4782,6 @@ function startDesigner() {
     overlay.hideOverlay();
   });
 
-  // Load Pattern from URL
-  try {
-    var query = window.location.href;
-    var rex = /\?id=([0-9]*)/g;
-    query = rex.exec(query);
-
-    if (query[1] >= 0) {
-      loadPattern(query[1]);
-    }
-  } catch (err) {}
-
   // Hide Splash Screen
   splashText.innerHTML = "Here we go!";
   overlay.hideOverlay();
@@ -6152,39 +5013,6 @@ function setupToolboxButtons() {
   nEnt.action = false;
   nEnt.icon = "iconNew";
   nEnt.tiptext = "New Pattern";
-
-  uiToolbox.addButton(nEnt);
-
-  // Open
-  nEnt = new UiButton();
-
-  nEnt.name = "toolboxOpen";
-
-  nEnt.action = false;
-  nEnt.icon = "iconOpen";
-  nEnt.tiptext = "Open Pattern";
-
-  uiToolbox.addButton(nEnt);
-
-  // Save
-  nEnt = new UiButton();
-
-  nEnt.name = "toolboxSave";
-
-  nEnt.action = false;
-  nEnt.icon = "iconSave";
-  nEnt.tiptext = "Save Pattern";
-
-  uiToolbox.addButton(nEnt);
-
-  // Share
-  nEnt = new UiButton();
-
-  nEnt.name = "toolboxShare";
-
-  nEnt.action = false;
-  nEnt.icon = "iconShare";
-  nEnt.tiptext = "Share Pattern";
 
   uiToolbox.addButton(nEnt);
 

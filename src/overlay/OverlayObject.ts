@@ -40,7 +40,7 @@ export type OverlayObject =
     }
   | {
       type: "text";
-      title: string;
+      title?: string;
       string?: string[];
     }
   | {
@@ -48,16 +48,13 @@ export type OverlayObject =
       state?: number;
     }
   | {
-      type: "inputRadio";
-      id: string;
+      type: "inputButton";
+      id?: string; // why `?`?
 
-      checked?: boolean;
       label: string;
-      name: string;
-      value: number;
+      value: string;
 
-      src?: string;
-      alt?: string;
+      click: (e: MouseEvent) => void;
     }
   | {
       type: "inputNumber";
@@ -66,41 +63,10 @@ export type OverlayObject =
       increment?: number;
       label: string;
       value: number;
-      maxValue: number;
-      minValue: number;
+      maxValue?: number;
+      minValue?: number;
 
-      change?: string; // TODO: make this a (e) => void
-    }
-  | {
-      type: "dropdown";
-      id: string;
-
-      change: string; // TODO: make this a (e) => void
-      data: { id: string; name: string }[];
-      label: string;
-    }
-  | {
-      type: "inputButton";
-      id?: string; // why `?`?
-
-      focused?: boolean;
-      label: string;
-      value: string;
-
-      click: string; // TODO: make this a (e) => void
-    }
-  | {
-      type: "inputFile";
-      id: string;
-
-      accepted: string;
-
-      change: string; // TODO: make this a (e) => void
-    }
-  | {
-      // ????
-      type: "canvas";
-      id: string;
+      change?: (e: Event) => void;
     }
   | {
       type: "inputText";
@@ -108,7 +74,13 @@ export type OverlayObject =
 
       label: string;
       placeholder: string;
-      value: string;
+    }
+  | {
+      type: "inputPassword";
+      id: string;
+
+      label: string;
+      placeholder: string;
     }
   | {
       type: "inputCheckbox";
@@ -118,6 +90,26 @@ export type OverlayObject =
       label: string;
     }
   | {
+      type: "inputRadio";
+      id: string;
+
+      checked?: boolean;
+      label: string;
+      name: string;
+      value: string | number;
+
+      src?: string;
+      alt?: string;
+    }
+  | {
+      type: "inputFile";
+      id: string;
+
+      accepted: string;
+
+      change: (e: Event) => void;
+    }
+  | {
       // I'm so confused
       type: "toggle"; // ???
       id: string;
@@ -125,7 +117,20 @@ export type OverlayObject =
       title: string;
       string: string[];
 
-      change: string; // TODO: make this a (e) => void
+      change: (e: Event) => void;
+    }
+  | {
+      type: "dropdown";
+      id: string;
+
+      change: (e: Event) => void;
+      data: { id: string; name: string }[];
+      label: string;
+    }
+  | {
+      // ????
+      type: "canvas";
+      id: string;
     }
   | {
       type: "share";
