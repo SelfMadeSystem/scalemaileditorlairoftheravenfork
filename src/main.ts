@@ -8,16 +8,15 @@
  */
 
 import "./style.css";
-import ImageLoader, { imagePath } from "./ImageLoader";
+import ImageLoader from "./ImageLoader";
 import Entity from "./Entity";
 import { ColourPalette, PaletteColour } from "./Palette";
 import { Swatch } from "./Swatch";
 import { ThemeSet } from "./Theme";
-import { stringToElements } from "./utils";
-import { OverlayInterface } from "./overlay/OverlayInterface";
+import { overlayInterface, setOverlay } from "./overlay/OverlayInterface";
 import { OverlayScreen } from "./overlay/OverlayScreen";
 import { OverlayObject } from "./overlay/OverlayObject";
-import { makeOverlayPane, OverlayPane } from "./overlay/OverlayPane";
+import { UiButton } from "./ui/UiButton";
 
 // Variables ==========================================================================================================
 // Assets
@@ -93,7 +92,6 @@ var panMouse = false;
 var panKey = false;
 
 // Overlay Variables
-var overlay = new OverlayInterface();
 var splashText;
 
 // Palette Variables
@@ -233,7 +231,11 @@ function UiSection() {
       }
 
       target.addEntity(
-        this.buttons[x].createButtonEntity(target, ox, oy + uiIconSize * x + sx)
+        ...this.buttons[x].createButtonEntity(
+          currentTool === this.buttons[x].name,
+          ox,
+          oy + uiIconSize * x + sx
+        )
       );
 
       if (
@@ -250,105 +252,14 @@ function UiSection() {
           }
 
           target.addEntity(
-            this.buttons[x].subbuttons[z].createButtonEntity(
-              target,
+            ...this.buttons[x].subbuttons[z].createButtonEntity(
+              currentTool === this.buttons[x].subbuttons[z].name,
               ox + uiIconSize * z,
               oy + uiIconSize * x + sx
             )
           );
         }
       }
-    }
-  };
-}
-
-function UiButton() {
-  this.name = "";
-  this.group = "";
-  this.subbuttons = [];
-
-  this.action = "";
-  this.expanded = false;
-  this.expandable = false;
-  this.helptext = [];
-  this.icon = "";
-  this.pregap = false;
-  this.selected = 0;
-  this.state = false;
-  this.tiptext = "";
-
-  this.addButton = function (btn) {
-    this.subbuttons.push(btn);
-  };
-
-  this.createButtonEntity = function (target, ox, oy) {
-    if (ox === undefined) ox = 0;
-    if (oy === undefined) oy = 0;
-
-    nEnt = new Entity();
-    nEnt.id = this.name;
-    nEnt.object = this;
-    nEnt.shape = "image";
-
-    nEnt.mouse = true;
-    nEnt.mouseClick = true;
-    nEnt.mouseHover = true;
-
-    if (this.icon !== false) {
-      nEnt.imagesrc = this.icon;
-    } else {
-      nEnt.imagesrc = this.subbuttons[this.selected].icon;
-    }
-
-    if (currentTool == this.name) {
-      nEnt.imageClipX = uiIconSize;
-      nEnt.imageClipY = 0;
-    } else {
-      nEnt.imageClipX = 0;
-      nEnt.imageClipY = 0;
-    }
-
-    nEnt.tooltip = true;
-    if (this.tiptext === false) {
-      nEnt.tooltipText = this.subbuttons[this.selected].tiptext;
-    } else {
-      nEnt.tooltipText = this.tiptext;
-    }
-
-    nEnt.originX = ox;
-    nEnt.originY = oy;
-    nEnt.height = uiIconSize;
-    nEnt.width = uiIconSize;
-
-    if (currentTool == this.name) {
-      this.createButtonHelp(target);
-    }
-
-    return nEnt;
-  };
-
-  this.createButtonHelp = function (target) {
-    var x = 0;
-    var y = this.helptext.length;
-
-    for (x = 0; x < y; x++) {
-      sEnt = new Entity();
-      sEnt.id = "help-" + x;
-      sEnt.shape = "text";
-
-      if (x == 0) {
-        sEnt.textType = 0;
-      } else {
-        sEnt.textType = 1;
-        sEnt.textString = "- ";
-      }
-
-      sEnt.textString += this.helptext[x];
-
-      sEnt.originX = uiOffsetX * 2 + uiIconSize;
-      sEnt.originY = uiOffsetY + 10 + 15 * x;
-
-      target.addEntity(sEnt);
     }
   };
 }
@@ -434,8 +345,8 @@ function EntityLayer() {
   };
 
   /* Entity Functions */
-  this.addEntity = function (ent) {
-    this.entities.push(ent);
+  this.addEntity = function (...ent) {
+    this.entities.push(...ent);
   };
 
   this.clearEntities = function () {
@@ -1738,7 +1649,7 @@ function itpImageProcess() {
 
   // Disable Interface & Change Cursor
   itpDisableButtons();
-  overlay.showLoading();
+  overlayInterface.showLoading();
 
   // Get Image Details
   imageWidth = itpImage.width;
@@ -1874,7 +1785,7 @@ function itpPreviewPattern() {
 
 function itpGeneratePattern() {
   itpStage = 4;
-  overlay.showLoading();
+  overlayInterface.showLoading();
 
   // Variables
   var colour = 0;
@@ -1943,7 +1854,7 @@ function itpSendToEditor() {
   createInterface();
   uiLayer.redrawCanvas();
 
-  overlay.hideOverlay();
+  overlayInterface.hideOverlay();
 }
 
 // Input Functions ====================================================================================================
@@ -2534,7 +2445,10 @@ function mouseClickUI(id) {
     // Toolbox Controls
     case "toolboxHelp":
       setOverlay("help");
-      overlay.showOverlay();
+      overlayInterface.showOverlay();
+
+      uiLayer.tooltip = false;
+      uiLayer.redrawCanvas();
       break;
 
     case "toolboxKickstarter":
@@ -2549,12 +2463,39 @@ function mouseClickUI(id) {
 
     case "toolboxNew":
       setOverlay("new");
-      overlay.showOverlay();
+      overlayInterface.showOverlay();
+
+      uiLayer.tooltip = false;
+      uiLayer.redrawCanvas();
       break;
 
     case "toolboxSettings":
       setOverlay("settings");
-      overlay.showOverlay();
+
+      if (rulerSize == "large") {
+        (document.getElementById("toggleSize") as HTMLInputElement).checked =
+          true;
+      }
+
+      if (drawEmpty === true) {
+        (document.getElementById("toggleEmpty") as HTMLInputElement).checked =
+          true;
+      }
+
+      if (theme == 0) {
+        (document.getElementById("toggleTheme") as HTMLInputElement).checked =
+          true;
+      }
+
+      if (rulerUnits == "metric") {
+        (document.getElementById("toggleUnits") as HTMLInputElement).checked =
+          true;
+      }
+
+      overlayInterface.showOverlay();
+
+      uiLayer.tooltip = false;
+      uiLayer.redrawCanvas();
       break;
 
     case "cameraPan":
@@ -2591,77 +2532,6 @@ function setCursor(cursor) {
 
 // Overlay Functions ==================================================================================================
 
-function setOverlay(windowID: string) {
-  const fragment = document.createDocumentFragment();
-
-  var wDow = overlay.getScreen(windowID);
-  var bar = wDow.bar;
-  var pane = wDow.pane;
-
-  // Output Contents
-  const titleNode = document.createElement("h1");
-  titleNode.textContent = wDow.title;
-
-  fragment.append(titleNode);
-
-  fragment.append(makeOverlayPane(bar, false));
-  fragment.append(makeOverlayPane(pane, true));
-
-  // Closing
-  fragment.append(
-    ...stringToElements(`
-    <div class='overlayFooter fontSizeSmall'>
-      <p class='fontSizeSmall floatLeft'>Scalemail Designer created by Anthony Edmonds - continued development by SelfMadeSystem</p>
-      <img src='images/logoLotRSmall${themeLibrary.themes[theme].logoColour}.png' alt='Lair of the Raven' class='floatRight' />
-    </div>`)
-  );
-
-  // Apply
-  const overlayWindow = document.getElementById("overlayWindow")!;
-  overlayWindow.innerHTML = "";
-  overlayWindow.appendChild(fragment);
-  overlay.hideLoading();
-
-  // Pane Actions
-  switch (windowID) {
-    case "newImageSelect":
-      itpStage = 0;
-      itpSetCanvas();
-      break;
-
-    case "settings":
-      if (rulerSize == "large") {
-        (document.getElementById("toggleSize") as HTMLInputElement).checked =
-          true;
-      }
-
-      if (drawEmpty === true) {
-        (document.getElementById("toggleEmpty") as HTMLInputElement).checked =
-          true;
-      }
-
-      if (theme == 0) {
-        (document.getElementById("toggleTheme") as HTMLInputElement).checked =
-          true;
-      }
-
-      if (rulerUnits == "metric") {
-        (document.getElementById("toggleUnits") as HTMLInputElement).checked =
-          true;
-      }
-
-      break;
-
-    case "swapPalette":
-      break;
-  }
-
-  if (uiLayer.tooltip === true) {
-    uiLayer.tooltip = false;
-    uiLayer.redrawCanvas();
-  }
-}
-
 function buildOverlays() {
   // Variables
   var nWindow;
@@ -2689,7 +2559,11 @@ function buildOverlays() {
     type: "button",
     title: "New from Image...",
     src: "buttonImage",
-    click: () => setOverlay("newImageSelect"),
+    click: () => {
+      setOverlay("newImageSelect");
+      itpStage = 0;
+      itpSetCanvas();
+    },
   };
 
   nWindow.addObjectToBar(nObject);
@@ -2707,7 +2581,7 @@ function buildOverlays() {
 
   nWindow.addObjectToPane(nObject);
 
-  overlay.addScreen(nWindow);
+  overlayInterface.addScreen(nWindow);
 
   // New from Shape
   nWindow = new OverlayScreen("newShape", "New from Shape");
@@ -2872,7 +2746,7 @@ function buildOverlays() {
 
   nWindow.addObjectToPane(nObject);
 
-  overlay.addScreen(nWindow);
+  overlayInterface.addScreen(nWindow);
 
   // New from Image
   // Selection
@@ -2983,7 +2857,7 @@ function buildOverlays() {
 
   nWindow.addObjectToPane(nObject);
 
-  overlay.addScreen(nWindow);
+  overlayInterface.addScreen(nWindow);
 
   // Pattern
   nWindow = new OverlayScreen("newImagePattern", "Configure Pattern");
@@ -3041,7 +2915,11 @@ function buildOverlays() {
     id: "o-Prev",
     label: "Previous",
     value: "Previous",
-    click: () => setOverlay("newImageSelect"),
+    click: () => {
+      setOverlay("newImageSelect");
+      itpStage = 0;
+      itpSetCanvas();
+    },
   };
 
   nWindow.addObjectToBar(nObject);
@@ -3073,7 +2951,7 @@ function buildOverlays() {
 
   nWindow.addObjectToPane(nObject);
 
-  overlay.addScreen(nWindow);
+  overlayInterface.addScreen(nWindow);
 
   // Swap Colours
   nWindow = new OverlayScreen("swapPalette", "Swap Colours");
@@ -3089,7 +2967,7 @@ function buildOverlays() {
 
   nWindow.addObjectToPane(nObject);
 
-  overlay.addScreen(nWindow);
+  overlayInterface.addScreen(nWindow);
 
   // Settings
   nWindow = new OverlayScreen("settings", "Settings");
@@ -3150,7 +3028,7 @@ function buildOverlays() {
 
   nWindow.addObjectToPane(nObject);
 
-  overlay.addScreen(nWindow);
+  overlayInterface.addScreen(nWindow);
 
   // Kickstarter
   nWindow = new OverlayScreen("kickstarter", "Kickstarter");
@@ -3159,7 +3037,7 @@ function buildOverlays() {
 
   // Pane
 
-  overlay.addScreen(nWindow);
+  overlayInterface.addScreen(nWindow);
 
   // Help & About
   nWindow = new OverlayScreen("help", "Help & About");
@@ -3317,7 +3195,7 @@ function buildOverlays() {
 
   nWindow.addObjectToPane(nObject);
 
-  overlay.addScreen(nWindow);
+  overlayInterface.addScreen(nWindow);
 
   // Compatability Error
   nWindow = new OverlayScreen("compError", "Compatability Issue");
@@ -3338,7 +3216,7 @@ function buildOverlays() {
 
   nWindow.addObjectToPane(nObject);
 
-  overlay.addScreen(nWindow);
+  overlayInterface.addScreen(nWindow);
 }
 
 // Palette Functions ==================================================================================================
@@ -3918,7 +3796,7 @@ function newFromShape() {
   zoomExtents(editorPattern);
   createInterface();
   uiLayer.redrawCanvas();
-  overlay.hideOverlay();
+  overlayInterface.hideOverlay();
   swatches.generatePatternSwatch(editorPattern);
   editorLayer.redrawCanvas();
   backgroundLayer.redrawCanvas();
@@ -4111,7 +3989,7 @@ function drawImg(
 
   if (entity.imageClipX !== false) {
     context.drawImage(
-      imageAssets.getImage(entity.imagesrc),
+      imageAssets.getImage(entity.imagesrc)!,
       entity.imageClipX,
       entity.imageClipY,
       entity.width,
@@ -4399,13 +4277,13 @@ function startDesigner() {
   addEvent(document, "keydown", keyHandler);
   addEvent(document, "keyup", keyHandler);
 
-  addEvent(overlay.background, "click", function () {
-    overlay.hideOverlay();
+  addEvent(overlayInterface.background, "click", function () {
+    overlayInterface.hideOverlay();
   });
 
   // Hide Splash Screen
   splashText.innerHTML = "Here we go!";
-  overlay.hideOverlay();
+  overlayInterface.hideOverlay();
   overlayBackground.className = "";
 
   // Check compatability
@@ -4413,7 +4291,7 @@ function startDesigner() {
 
   if (swatches.patternSwatch.context.globalCompositeOperation !== "overlay") {
     setOverlay("compError");
-    overlay.showOverlay();
+    overlayInterface.showOverlay();
   }
 
   swatches.patternSwatch.context.globalCompositeOperation = "source-over";
@@ -4724,8 +4602,6 @@ function setupToolboxButtons() {
 
   nEnt.action = false;
   nEnt.expandable = true;
-  nEnt.icon = false;
-  nEnt.tiptext = false;
 
   uiToolbox.addButton(nEnt);
 
@@ -4792,8 +4668,6 @@ function setupToolboxButtons() {
 
   nEnt.action = false;
   nEnt.expandable = true;
-  nEnt.icon = false;
-  nEnt.tiptext = false;
 
   uiToolbox.addButton(nEnt);
 
@@ -4863,8 +4737,6 @@ function setupToolboxButtons() {
 
   nEnt.action = false;
   nEnt.expandable = true;
-  nEnt.icon = false;
-  nEnt.tiptext = false;
 
   uiToolbox.addButton(nEnt);
 

@@ -1,6 +1,8 @@
+import { stringToElements } from "../utils";
+import { makeOverlayPane } from "./OverlayPane";
 import { OverlayScreen } from "./OverlayScreen";
 
-export class OverlayInterface {
+class OverlayInterface {
   public background = document.getElementById(
     "overlayBackground"
   ) as HTMLDivElement;
@@ -36,4 +38,35 @@ export class OverlayInterface {
   public hideLoading() {
     this.loading.className = "";
   }
+}
+
+export const overlayInterface = new OverlayInterface();
+
+export function setOverlay(windowID: string) {
+  const fragment = document.createDocumentFragment();
+
+  const { bar, pane, title } = overlayInterface.getScreen(windowID);
+
+  // Output Contents
+  const titleNode = document.createElement("h1");
+  titleNode.textContent = title;
+
+  fragment.append(titleNode);
+
+  fragment.append(makeOverlayPane(bar, false));
+  fragment.append(makeOverlayPane(pane, true));
+
+  // Closing
+  fragment.append(
+    ...stringToElements(`
+    <div class='overlayFooter fontSizeSmall'>
+      <p class='fontSizeSmall floatLeft'>Scalemail Designer created by Anthony Edmonds - continued development by SelfMadeSystem</p>
+    </div>`)
+  );
+
+  // Apply
+  const overlayWindow = document.getElementById("overlayWindow")!;
+  overlayWindow.innerHTML = "";
+  overlayWindow.appendChild(fragment);
+  overlayInterface.hideLoading();
 }

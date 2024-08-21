@@ -1,6 +1,8 @@
+import { UiButton } from "./ui/UiButton";
+
 export default class Entity {
   public id = "";
-  public object = false;
+  public object: UiButton | undefined;
   public shape = "";
 
   public mouse = false;
@@ -18,11 +20,11 @@ export default class Entity {
   public strokeWeight = 0;
 
   public imagesrc = "";
-  public imageClipX = false;
-  public imageClipY = false;
+  public imageClipX = 0;
+  public imageClipY = 0;
 
   public tooltip = false;
-  public tooltipText = "";
+  public tooltipText: string | undefined;
   public tooltipFlip = false;
 
   public originX = 0;
