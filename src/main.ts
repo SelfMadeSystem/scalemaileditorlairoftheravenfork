@@ -12,6 +12,8 @@ import ImageLoader from "./ImageLoader";
 import Entity from "./Entity";
 import { ColourPalette, PaletteColour } from "./Palette";
 import { Swatch } from "./Swatch";
+import { ThemeSet } from "./Theme";
+import { stringToElements } from "./utils";
 
 // Variables ==========================================================================================================
 // Assets
@@ -20,7 +22,9 @@ const imageAssets = new ImageLoader(startDesigner);
 // Canvases
 var backgroundLayer = new EntityLayer();
 var editorLayer = new EntityLayer();
-var interactionLayer;
+const interactionLayer = document.getElementById(
+  "canvasWrapper"
+) as HTMLDivElement;
 var uiLayer = new EntityLayer();
 var photoLayer = new EntityLayer();
 
@@ -33,12 +37,12 @@ var nEnt;
 var sEnt;
 
 // Font Styles
-var fontStyles = [];
-
-fontStyles[0] = "bold 12px Montserrat";
-fontStyles[1] = "12px Montserrat";
-fontStyles[2] = "bold 18px Montserrat";
-fontStyles[3] = "18px Montserrat";
+const fontStyles = [
+  "bold 12px Montserrat",
+  "12px Montserrat",
+  "bold 18px Montserrat",
+  "18px Montserrat",
+];
 
 // Gallery Variables
 var loadedID = 0;
@@ -1461,10 +1465,10 @@ function addEvent(object, type, method) {
 }
 
 function calculateScale(
-  destinationHeight,
-  destinationWidth,
-  sourceHeight,
-  sourceWidth
+  destinationHeight: number,
+  destinationWidth: number,
+  sourceHeight: number,
+  sourceWidth: number
 ) {
   var scale = 0;
   var sh = 0;
@@ -1499,7 +1503,14 @@ function changeCSS(selector, style, value) {
   return false;
 }
 
-function distanceFromScale(fromX, fromY, toX, toY, offsetX, offsetY) {
+function distanceFromScale(
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  offsetX: number,
+  offsetY: number
+) {
   var scaleCenterX = toX + offsetX + scaleWidthPxHalf;
   var scaleCenterY = toY + offsetY + scaleHeightPxHalf;
 
@@ -1515,17 +1526,8 @@ function distanceFromScale(fromX, fromY, toX, toY, offsetX, offsetY) {
   }
 }
 
-function formatRGBA(r, g, b, a) {
-  if (a === undefined) a = 1;
-
-  return "rgba(" + r + "," + g + "," + b + "," + a + ")";
-}
-
-function setURL(id, title) {
-  if (id === undefined) id = "";
-  if (title === undefined) title = "";
-
-  if (id != "") {
+function setURL(id?: string, title?: string) {
+  if (id) {
     id = "?id=" + id;
   } else {
     id = "https://scalemail.lairoftheraven.uk";
@@ -3135,31 +3137,36 @@ function setCursor(cursor) {
 }
 
 // Overlay Functions ==================================================================================================
+
 function setOverlay(windowID) {
-  var content = "";
+  const content = document.createElement("template");
 
   var wDow = overlay.getScreen(windowID);
   var bar = wDow.bar;
   var pane = wDow.pane;
 
   // Output Contents
-  content = "<h1>" + wDow.title + "</h1>";
+  const titleNode = document.createElement("h1");
+  titleNode.textContent = wDow.title;
 
-  content += makeOverlayPane(bar, false);
-  content += makeOverlayPane(pane, true);
+  content.content.append(titleNode);
+
+  content.content.append(...stringToElements(makeOverlayPane(bar, false)));
+  content.content.append(...stringToElements(makeOverlayPane(pane, true)));
 
   // Closing
-  content += "<div class='overlayFooter fontSizeSmall'>";
-  content +=
-    "<p class='fontSizeSmall floatLeft'>Scalemail Designer created by Anthony Edmonds</p>";
-  content +=
-    "<img src='images/logoLotRSmall" +
-    themeLibrary.themes[theme].logoColour +
-    ".png' alt='Lair of the Raven' class='floatRight' />";
-  content += "</div>";
+  content.content.append(
+    ...stringToElements(`
+    <div class='overlayFooter fontSizeSmall'>
+      <p class='fontSizeSmall floatLeft'>Scalemail Designer created by Anthony Edmonds - continued development by SelfMadeSystem</p>
+      <img src='images/logoLotRSmall${themeLibrary.themes[theme].logoColour}.png' alt='Lair of the Raven' class='floatRight' />
+    </div>`)
+  );
 
   // Apply
-  overlayWindow.innerHTML = content;
+  const overlayWindow = document.getElementById("overlayWindow")!;
+  overlayWindow.innerHTML = "";
+  overlayWindow.appendChild(content.content.cloneNode(true));
   overlay.hideLoading();
 
   // Pane Actions
@@ -3848,6 +3855,7 @@ function buildOverlays() {
   nObject.type = "inputRadio";
   nObject.id = "shapeDiamond";
 
+  nObject.checked = false;
   nObject.label = "Diamond";
   nObject.name = "shape";
   nObject.value = 1;
@@ -3948,6 +3956,7 @@ function buildOverlays() {
   // Create Button
   nObject = new OverlayObject();
 
+  // FIXME: why no `id`?
   nObject.type = "inputButton";
 
   nObject.label = "Create Pattern";
@@ -5041,7 +5050,7 @@ function buildOverlays() {
 }
 
 // Palette Functions ==================================================================================================
-function buildPalette(target) {
+function buildPalette() {
   // Void
   nEnt = new PaletteColour();
 
@@ -6034,9 +6043,6 @@ function setupElements() {
   photoLayer.id = "photoLayer";
   photoLayer.setupMemory();
   photoLayer.scaleCanvas(250, 250, false);
-
-  // Interaction
-  interactionLayer = document.getElementById("canvasWrapper");
 
   // Overlay
   overlay.setupOverlay();

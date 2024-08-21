@@ -1,4 +1,4 @@
-class ThemeSet {
+export class ThemeSet {
   public themes: ThemeStyle[] = [
     {
       id: "dark",
@@ -30,7 +30,7 @@ class ThemeSet {
   ];
 }
 
-interface ThemeStyle {
+export interface ThemeStyle {
   id: string;
 
   fontColour: string;
