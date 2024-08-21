@@ -687,6 +687,8 @@ label img:hover,
 .overlayButton {
   position: relative;
   display: block;
+  background-color: transparent;
+  border: none;
 }
 
 .overlayButton img {

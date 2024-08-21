@@ -14,6 +14,9 @@ import { ColourPalette, PaletteColour } from "./Palette";
 import { Swatch } from "./Swatch";
 import { ThemeSet } from "./Theme";
 import { stringToElements } from "./utils";
+import { OverlayInterface } from "./overlay/OverlayInterface";
+import { OverlayScreen } from "./overlay/OverlayScreen";
+import { OverlayObject } from "./overlay/OverlayObject";
 
 // Variables ==========================================================================================================
 // Assets
@@ -43,6 +46,8 @@ const fontStyles = [
   "bold 18px Montserrat",
   "18px Montserrat",
 ];
+
+var patternShape = 0;
 
 // Gallery Variables
 var loadedID = 0;
@@ -582,115 +587,6 @@ function EntityLayer() {
     this.tooltipX = 0;
     this.tooltipY = 0;
   };
-}
-
-// Overlay
-function OverlayInterface() {
-  this.background;
-  this.loading;
-  this.pane;
-  this.wrapper;
-
-  this.screens = [];
-
-  /* Configuration */
-  this.setupOverlay = function () {
-    this.background = document.getElementById("overlayBackground");
-    this.loading = document.getElementById("overlayLoading");
-    this.pane = document.getElementById("overlayWindow");
-    this.wrapper = document.getElementById("overlayWrapper");
-  };
-
-  /* Screens */
-  this.addScreen = function (screen) {
-    this.screens.push(screen);
-  };
-
-  this.getScreen = function (id) {
-    var x = 0;
-    var y = this.screens.length;
-
-    for (x = 0; x < y; x++) {
-      if (this.screens[x].id == id) {
-        return this.screens[x];
-      }
-    }
-  };
-
-  /* Toggles */
-  this.showOverlay = function () {
-    this.wrapper.className = "show";
-  };
-
-  this.hideOverlay = function () {
-    this.wrapper.className = "";
-    this.pane.innerHTML = "";
-  };
-
-  this.showLoading = function () {
-    this.loading.className = "show";
-  };
-
-  this.hideLoading = function () {
-    this.loading.className = "";
-  };
-}
-
-function OverlayScreen() {
-  this.id = "";
-  this.title = "";
-
-  this.bar = new OverlayPane();
-  this.pane = new OverlayPane();
-
-  this.addObjectToBar = function (object) {
-    this.bar.addObject(object);
-  };
-
-  this.addObjectToPane = function (object) {
-    this.pane.addObject(object);
-  };
-}
-
-function OverlayPane() {
-  this.objects = [];
-
-  this.addObject = function (object) {
-    this.objects.push(object);
-  };
-}
-
-function OverlayObject() {
-  this.type = "";
-  this.id = "";
-
-  this.title = "";
-  this.string = [];
-
-  this.accepted = "";
-  this.checked = false;
-  this.data = [];
-  this.enabled = true;
-  this.focused = false;
-  this.increment = 0;
-  this.label = "";
-  this.length = 0;
-  this.maxValue = 999;
-  this.minValue = 0;
-  this.name = "";
-  this.state = 0;
-  this.target = "_blank";
-  this.placeholder = false;
-  this.playlist = "";
-  this.url = "";
-  this.value = "";
-
-  this.src = false;
-  this.alt = "";
-
-  this.click = false;
-  this.hover = false;
-  this.change = false;
 }
 
 // Palette
@@ -3139,7 +3035,7 @@ function setCursor(cursor) {
 // Overlay Functions ==================================================================================================
 
 function setOverlay(windowID) {
-  const content = document.createElement("template");
+  const fragment = document.createDocumentFragment();
 
   var wDow = overlay.getScreen(windowID);
   var bar = wDow.bar;
@@ -3149,13 +3045,13 @@ function setOverlay(windowID) {
   const titleNode = document.createElement("h1");
   titleNode.textContent = wDow.title;
 
-  content.content.append(titleNode);
+  fragment.append(titleNode);
 
-  content.content.append(...stringToElements(makeOverlayPane(bar, false)));
-  content.content.append(...stringToElements(makeOverlayPane(pane, true)));
+  fragment.append(makeOverlayPane(bar, false));
+  fragment.append(makeOverlayPane(pane, true));
 
   // Closing
-  content.content.append(
+  fragment.append(
     ...stringToElements(`
     <div class='overlayFooter fontSizeSmall'>
       <p class='fontSizeSmall floatLeft'>Scalemail Designer created by Anthony Edmonds - continued development by SelfMadeSystem</p>
@@ -3166,7 +3062,7 @@ function setOverlay(windowID) {
   // Apply
   const overlayWindow = document.getElementById("overlayWindow")!;
   overlayWindow.innerHTML = "";
-  overlayWindow.appendChild(content.content.cloneNode(true));
+  overlayWindow.appendChild(fragment);
   overlay.hideLoading();
 
   // Pane Actions
@@ -3227,35 +3123,31 @@ function setOverlay(windowID) {
 function makeOverlayPane(pane, type) {
   if (type === undefined) type = true;
 
-  var content = "";
-  var objects = 0;
-  var brick = false;
-
   var xClick = "";
   var xChange = "";
   var xHover = "";
   var tmp = "";
 
   var c = "";
-  var x = 0;
-  var y = 0;
   var z = 0;
   var n = 0;
 
-  // Open Pane
+  const outerDiv = document.createElement("div");
+  let innerDiv = outerDiv;
   if (type === true) {
-    content = "<div class='overlayPane'>";
-    content += "<div id='htmlArea'>";
-    y = 1;
+    outerDiv.classList.add("overlayPane");
+    const newDiv = document.createElement("div");
+    newDiv.classList.add("htmlArea");
+    outerDiv.append(newDiv);
+    innerDiv = newDiv;
   } else {
-    content = "<div class='overlayPane bar'>";
-    y = 0;
+    outerDiv.classList.add("overlayPane");
+    outerDiv.classList.add("bar");
   }
 
   // Create Objects
-  objects = pane.objects.length;
-
-  for (x = 0; x < objects; x++) {
+  for (let x = 0; x < pane.objects.length; x++) {
+    let content = "";
     // Mouse Events
     if (pane.objects[x].click !== false) {
       xClick = 'onclick="' + pane.objects[x].click + '" ';
@@ -3284,7 +3176,7 @@ function makeOverlayPane(pane, type) {
           "' target='" +
           pane.objects[x].target +
           "'>";
-        if (pane.objects[x].src !== false) {
+        if (pane.objects[x].src) {
           content += "<div class='anchorImage'>";
           content +=
             "<img src='" +
@@ -3320,23 +3212,41 @@ function makeOverlayPane(pane, type) {
         content += "<p>" + pane.objects[x].title + "</p>";
         content += "</div>";
         content += "</a>";
-
-        brick = true;
         break;
 
-      case "button":
-        content +=
-          "<div class='overlayButton' " + xClick + xChange + xHover + '">';
-        content +=
-          "<img src='" +
-          imagePath +
-          pane.objects[x].src +
-          ".png' alt='" +
-          pane.objects[x].alt +
-          "' />";
-        content += "<p>" + pane.objects[x].title + "</p>";
-        content += "</div>";
+      case "button": {
+        // content +=
+        //   "<div class='overlayButton' " + xClick + xChange + xHover + '">';
+        // content +=
+        //   "<img src='" +
+        //   imagePath +
+        //   pane.objects[x].src +
+        //   ".png' alt='" +
+        //   pane.objects[x].alt +
+        //   "' />";
+        // content += "<p>" + pane.objects[x].title + "</p>";
+        // content += "</div>";
+
+        const button = document.createElement("button");
+        button.classList.add("overlayButton");
+        button.addEventListener("click", () => {
+          console.log(pane.objects[x].click);
+          pane.objects[x].click();
+        });
+
+        const img = document.createElement("img");
+        img.src = imagePath + pane.objects[x].src + ".png";
+        if (pane.objects[x].alt) img.alt = pane.objects[x].alt;
+        button.append(img);
+
+        const p = document.createElement("p");
+        p.textContent = pane.objects[x].title;
+        button.append(p);
+
+        innerDiv.append(button);
+
         break;
+      }
 
       case "canvas":
         content +=
@@ -3710,19 +3620,30 @@ function makeOverlayPane(pane, type) {
 
         break;
 
-      case "text":
-        var c = 0;
-        var l = pane.objects[x].string.length;
+      case "text": {
+        if (pane.objects[x].title) {
+          const titleNode = document.createElement("h2");
+          titleNode.textContent = pane.objects[x].title;
 
-        if (pane.objects[x].title != "") {
-          content += "<h2>" + pane.objects[x].title + "</h2>";
+          innerDiv.appendChild(titleNode);
         }
 
-        for (c = 0; c < l; c++) {
-          content += "<p>" + pane.objects[x].string[c] + "</p>";
+        if (typeof pane.objects[x].string == "string") {
+          const textNode = document.createElement("p");
+          textNode.textContent = pane.objects[x].string;
+
+          innerDiv.appendChild(textNode);
+        } else if (Array.isArray(pane.objects[x].string)) {
+          for (let c = 0; c < pane.objects[x].string.length; c++) {
+            const textNode = document.createElement("p");
+            textNode.textContent = pane.objects[x].string[c];
+
+            innerDiv.appendChild(textNode);
+          }
         }
 
         break;
+      }
 
       case "toggle":
         content += "<h2>" + pane.objects[x].title + "</h2>";
@@ -3747,245 +3668,217 @@ function makeOverlayPane(pane, type) {
         console.log("Unhandled object: " + pane.objects[x].type);
         break;
     }
+    innerDiv.append(...stringToElements(content));
   }
 
-  if (brick === true) {
-    for (z = 0; z < 8; z++) {
-      content += "<div class='areaBrick hidden'></div>";
-    }
-  }
-
-  if (type === true) {
-    content += "</div>";
-  }
-
-  content += "</div>";
-
-  return content;
+  return outerDiv;
 }
 
 function buildOverlays() {
   // Variables
   var nWindow;
-  var nObject;
+  var nObject: OverlayObject;
 
   // Create New
-  nWindow = new OverlayScreen();
-  nWindow.id = "new";
-  nWindow.title = "Create New Pattern";
+  nWindow = new OverlayScreen("new", "Create New Pattern");
 
   // Bar
   // New from Shape
-  nObject = new OverlayObject();
-
-  nObject.type = "button";
-  nObject.title = "New from Shape...";
-  nObject.src = "buttonNew";
-  nObject.click = "setOverlay('newShape');";
+  nObject = {
+    type: "button",
+    title: "New from Shape...",
+    src: "buttonNew",
+    click: () => setOverlay("newShape"),
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // New from Image
-  nObject = new OverlayObject();
-
-  nObject.type = "button";
-  nObject.title = "New from Image...";
-  nObject.src = "buttonImage";
-  nObject.click = "setOverlay('newImageSelect');";
+  nObject = {
+    type: "button",
+    title: "New from Image...",
+    src: "buttonImage",
+    click: () => setOverlay("newImageSelect"),
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Pane
   // Information
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-  nObject.title = "Scalemail Designer";
-  nObject.string[0] =
-    "Start a new inlay design based on either a default shape, or using a simple image.";
-  nObject.string[1] =
-    "You will be able to configure your new design on the next page.";
+  nObject = {
+    type: "text",
+    title: "Scalemail Designer",
+    string: [
+      "Start a new inlay design based on either a default shape, or using a simple image.",
+      "You will be able to configure your new design on the next page.",
+    ],
+  };
 
   nWindow.addObjectToPane(nObject);
 
   overlay.addScreen(nWindow);
 
   // New from Shape
-  nWindow = new OverlayScreen();
-  nWindow.id = "newShape";
-  nWindow.title = "New from Shape";
+  nWindow = new OverlayScreen("newShape", "New from Shape");
 
   // Bar
   // Select Shape
   // Title
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-  nObject.title = "Select Shape";
+  nObject = {
+    type: "text",
+    title: "Select Shape",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Radio Button (Square)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputRadio";
-  nObject.id = "shapeSquare";
-
-  nObject.checked = true;
-  nObject.label = "Square";
-  nObject.name = "shape";
-  nObject.value = 0;
-
-  nObject.src = "shapeSquare.png";
-  nObject.alt = "Square";
+  nObject = {
+    type: "inputRadio",
+    id: "shapeSquare",
+    checked: true,
+    label: "Square",
+    name: "shape",
+    value: 0,
+    src: "shapeSquare.png",
+    alt: "Square",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Radio Button (Diamond)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputRadio";
-  nObject.id = "shapeDiamond";
-
-  nObject.checked = false;
-  nObject.label = "Diamond";
-  nObject.name = "shape";
-  nObject.value = 1;
-
-  nObject.src = "shapeDiamond.png";
-  nObject.alt = "Diamond";
+  nObject = {
+    type: "inputRadio",
+    id: "shapeDiamond",
+    checked: false,
+    label: "Diamond",
+    name: "shape",
+    value: 1,
+    src: "shapeDiamond.png",
+    alt: "Diamond",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Pattern Settings
   // Title
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-  nObject.title = "Pattern Settings";
+  nObject = {
+    type: "text",
+    title: "Pattern Settings",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Width
-  nObject = new OverlayObject();
-
-  nObject.type = "inputNumber";
-  nObject.id = "o-Width";
-
-  nObject.increment = 1;
-  nObject.label = "Width";
-  nObject.value = 5;
+  nObject = {
+    type: "inputNumber",
+    id: "o-Width",
+    increment: 1,
+    label: "Width",
+    value: 5,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Height
-  nObject = new OverlayObject();
-
-  nObject.type = "inputNumber";
-  nObject.id = "o-Height";
-
-  nObject.increment = 1;
-  nObject.label = "Height";
-  nObject.value = 9;
+  nObject = {
+    type: "inputNumber",
+    id: "o-Height",
+    increment: 1,
+    label: "Height",
+    value: 9,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Colours
-  nObject = new OverlayObject();
-
-  nObject.type = "dropdown";
-  nObject.id = "o-Colour";
-
-  nObject.change = "setActiveColour(this.value);";
-  nObject.data = palette.colours;
-  nObject.label = "Colour";
+  nObject = {
+    type: "dropdown",
+    id: "o-Colour",
+    change: "setActiveColour(this.value)",
+    data: palette.colours,
+    label: "Colour",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Previous Button
-  nObject = new OverlayObject();
-
-  nObject.type = "inputButton";
-  nObject.id = "o-Prev";
-
-  nObject.label = "Previous";
-  nObject.value = "Previous";
-
-  nObject.click = "setOverlay('new');";
+  nObject = {
+    type: "inputButton",
+    id: "o-Prev",
+    label: "Previous",
+    value: "Previous",
+    click: "setOverlay('new')",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Create Button
-  nObject = new OverlayObject();
-
-  // FIXME: why no `id`?
-  nObject.type = "inputButton";
-
-  nObject.label = "Create Pattern";
-  nObject.value = "Create Pattern";
-
-  nObject.click = "newFromShape();";
+  nObject = {
+    // FIXME: why no `id`?
+    type: "inputButton",
+    label: "Create Pattern",
+    value: "Create Pattern",
+    click: "newFromShape()",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Pane
   // Information
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "How to Use";
-  nObject.string[0] =
-    "Use these options to generate a new scalemail pattern from a basic shape.";
-  nObject.string[1] =
-    "Select the desired shape from the options provided, then set the height, width, and colour as desired.";
-  nObject.string[2] =
-    "Note that some shapes, such as the diamond, require a fixed height/width ratio that will be calculated automatically.";
+  nObject = {
+    type: "text",
+    title: "How to Use",
+    string: [
+      "Use these options to generate a new scalemail pattern from a basic shape.",
+      "Select the desired shape from the options provided, then set the height, width, and colour as desired.",
+      "Note that some shapes, such as the diamond, require a fixed height/width ratio that will be calculated automatically.",
+    ],
+  };
 
   nWindow.addObjectToPane(nObject);
 
@@ -3993,524 +3886,487 @@ function buildOverlays() {
 
   // New from Image
   // Selection
-  nWindow = new OverlayScreen();
-  nWindow.id = "newImageSelect";
-  nWindow.title = "New from Image";
+  nWindow = new OverlayScreen("newImageSelect", "New from Image");
 
   // Bar
   // Title
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-  nObject.title = "Select Image";
+  nObject = {
+    type: "text",
+    title: "Select Image",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // File Select
-  nObject = new OverlayObject();
-
-  nObject.type = "inputFile";
-  nObject.id = "o-File";
-
-  nObject.accepted = "image/*";
-
-  nObject.change = "itpImageSelect(this.files[0]);";
+  nObject = {
+    type: "inputFile",
+    id: "o-File",
+    accepted: "image/*",
+    change: "itpImageSelect(this.files[0])",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Information
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "How to Use";
-  nObject.string[0] = "The image should be a simple motif or design.";
-  nObject.string[1] =
-    "Your image will be processed on your computer and will not be uploaded.";
-  nObject.string[2] =
-    "You will be able to configure your pattern after processing.";
+  nObject = {
+    type: "text",
+    title: "How to Use",
+    string: [
+      "The image should be a simple motif or design.",
+      "Your image will be processed on your computer and will not be uploaded.",
+      "You will be able to configure your pattern after processing.",
+    ],
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Previous Button
-  nObject = new OverlayObject();
-
-  nObject.type = "inputButton";
-  nObject.id = "o-Prev";
-
-  nObject.label = "Previous";
-  nObject.value = "Previous";
-
-  nObject.click = "setOverlay('new');";
+  nObject = {
+    type: "inputButton",
+    id: "o-Prev",
+    label: "Previous",
+    value: "Previous",
+    click: "setOverlay('new')",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Next Button
-  nObject = new OverlayObject();
-
-  nObject.type = "inputButton";
-  nObject.id = "o-Next";
-
-  nObject.label = "Process";
-  nObject.value = "Process";
-
-  nObject.click = "itpImageProcess();";
+  nObject = {
+    type: "inputButton",
+    id: "o-Next",
+    label: "Process",
+    value: "Process",
+    click: "itpImageProcess()",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Pane
   // Canvas
-  nObject = new OverlayObject();
-
-  nObject.type = "canvas";
-  nObject.id = "oCanvas";
+  nObject = {
+    type: "canvas",
+    id: "oCanvas",
+  };
 
   nWindow.addObjectToPane(nObject);
 
   overlay.addScreen(nWindow);
 
   // Pattern
-  nWindow = new OverlayScreen();
-  nWindow.id = "newImagePattern";
-  nWindow.title = "Configure Pattern";
+  nWindow = new OverlayScreen("newImagePattern", "Configure Pattern");
 
   // Bar
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Pattern Width
-  nObject = new OverlayObject();
-
-  nObject.type = "inputNumber";
-  nObject.id = "o-Width";
-
-  nObject.label = "Width";
-  nObject.value = 10;
-
-  nObject.change = "itpCanvasRedraw();";
+  nObject = {
+    type: "inputNumber",
+    id: "o-Width",
+    label: "Width",
+    value: 10,
+    change: "itpCanvasRedraw()",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Title
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "How to Use";
-  nObject.string[0] =
-    "Change the width of the pattern to increase scale density.";
-  nObject.string[1] =
-    "Focus on the motif/design of your image. Perform minor adjustments using the editor.";
+  nObject = {
+    type: "text",
+    title: "How to Use",
+    string: [
+      "Change the width of the pattern to increase scale density.",
+      "Focus on the motif/design of your image. Perform minor adjustments using the editor.",
+    ],
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Previous Button
-  nObject = new OverlayObject();
-
-  nObject.type = "inputButton";
-  nObject.id = "o-Prev";
-
-  nObject.label = "Previous";
-  nObject.value = "Previous";
-
-  nObject.click = "setOverlay('newImageSelect');";
+  nObject = {
+    type: "inputButton",
+    id: "o-Prev",
+    label: "Previous",
+    value: "Previous",
+    click: "setOverlay('newImageSelect')",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Next Button
-  nObject = new OverlayObject();
-
-  nObject.type = "inputButton";
-  nObject.id = "o-Next";
-
-  nObject.label = "Build";
-  nObject.value = "Build";
-
-  nObject.click = "itpGeneratePattern();";
+  nObject = {
+    type: "inputButton",
+    id: "o-Next",
+    label: "Build",
+    value: "Build",
+    click: "itpGeneratePattern()",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Pane
   // Canvas
-  nObject = new OverlayObject();
-
-  nObject.type = "canvas";
-  nObject.id = "oCanvas";
+  nObject = {
+    type: "canvas",
+    id: "oCanvas",
+  };
 
   nWindow.addObjectToPane(nObject);
 
   overlay.addScreen(nWindow);
 
   // Swap Colours
-  nWindow = new OverlayScreen();
-  nWindow.id = "swapPalette";
-  nWindow.title = "Swap Colours";
+  nWindow = new OverlayScreen("swapPalette", "Swap Colours");
 
   // Bar
 
   // Pane
   // Canvas
-  nObject = new OverlayObject();
-
-  nObject.type = "canvas";
-  nObject.id = "oCanvas";
+  nObject = {
+    type: "canvas",
+    id: "oCanvas",
+  };
 
   nWindow.addObjectToPane(nObject);
 
   overlay.addScreen(nWindow);
 
   // Open
-  nWindow = new OverlayScreen();
-  nWindow.id = "open";
-  nWindow.title = "Browse Gallery";
+  nWindow = new OverlayScreen("open", "Browse Gallery");
 
   // Bar
   // Heading
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.string[0] =
-    "Enter some search terms to explore the pattern gallery. If you are looking for a pattern that has been set to private, you need to enter the exact title.";
-  nObject.string[1] =
-    "Looking for Scalemail Banner Templates? Search for the title 'Template' or the author 'Lair of the Raven'.";
+  nObject = {
+    type: "text",
+    string: [
+      "Enter some search terms to explore the pattern gallery. If you are looking for a pattern that has been set to private, you need to enter the exact title.",
+      "Looking for Scalemail Banner Templates? Search for the title 'Template' or the author 'Lair of the Raven'.",
+    ],
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Title
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Title
-  nObject = new OverlayObject();
-
-  nObject.type = "inputText";
-  nObject.id = "loadTitle";
-
-  nObject.label = "Title";
-  nObject.placeholder = "Search by title";
+  nObject = {
+    type: "inputText",
+    id: "loadTitle",
+    label: "Title",
+    placeholder: "Search by title",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Author
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Author
-  nObject = new OverlayObject();
-
-  nObject.type = "inputText";
-  nObject.id = "loadAuthor";
-
-  nObject.label = "Author";
-  nObject.placeholder = "Search by author";
+  nObject = {
+    type: "inputText",
+    id: "loadAuthor",
+    label: "Author",
+    placeholder: "Search by author",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Scales
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Minimum
-  nObject = new OverlayObject();
-
-  nObject.type = "inputNumber";
-  nObject.id = "loadMin";
-
-  nObject.label = "Min. Scales";
-  nObject.value = 0;
+  nObject = {
+    type: "inputNumber",
+    id: "loadMin",
+    label: "Min. Scales",
+    value: 0,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Maximum
-  nObject = new OverlayObject();
-
-  nObject.type = "inputNumber";
-  nObject.id = "loadMax";
-
-  nObject.label = "Max. Scales";
-  nObject.maxValue = 9999;
-  nObject.value = 9999;
+  nObject = {
+    type: "inputNumber",
+    id: "loadMax",
+    label: "Max. Scales",
+    maxValue: 9999,
+    value: 9999,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Order
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Title A - Z
-  nObject = new OverlayObject();
-
-  nObject.type = "inputRadio";
-  nObject.id = "loadTitleAZ";
-
-  nObject.label = "Title A-Z";
-  nObject.name = "sort";
-  nObject.value = "taz";
+  nObject = {
+    type: "inputRadio",
+    id: "loadTitleAZ",
+    label: "Title A-Z",
+    name: "sort",
+    value: "taz",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Title Z - A
-  nObject = new OverlayObject();
-
-  nObject.type = "inputRadio";
-  nObject.id = "loadTitleZA";
-
-  nObject.label = "Title Z-A";
-  nObject.name = "sort";
-  nObject.value = "tza";
+  nObject = {
+    type: "inputRadio",
+    id: "loadTitleZA",
+    label: "Title Z-A",
+    name: "sort",
+    value: "tza",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Author A - Z
-  nObject = new OverlayObject();
-
-  nObject.type = "inputRadio";
-  nObject.id = "loadAuthorAZ";
-
-  nObject.label = "Author A-Z";
-  nObject.name = "sort";
-  nObject.value = "aaz";
+  nObject = {
+    type: "inputRadio",
+    id: "loadAuthorAZ",
+    label: "Author A-Z",
+    name: "sort",
+    value: "aaz",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Author Z - A
-  nObject = new OverlayObject();
-
-  nObject.type = "inputRadio";
-  nObject.id = "loadAuthorZA";
-
-  nObject.label = "Author Z-A";
-  nObject.name = "sort";
-  nObject.value = "aza";
+  nObject = {
+    type: "inputRadio",
+    id: "loadAuthorZA",
+    label: "Author Z-A",
+    name: "sort",
+    value: "aza",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Scales 0 - 9
-  nObject = new OverlayObject();
-
-  nObject.type = "inputRadio";
-  nObject.id = "loadScales09";
-
-  nObject.label = "Smallest";
-  nObject.name = "sort";
-  nObject.value = "saz";
+  nObject = {
+    type: "inputRadio",
+    id: "loadScales09",
+    label: "Smallest",
+    name: "sort",
+    value: "saz",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Scales 9 - 0
-  nObject = new OverlayObject();
-
-  nObject.type = "inputRadio";
-  nObject.id = "loadAuthorZA";
-
-  nObject.label = "Largest";
-  nObject.name = "sort";
-  nObject.value = "sza";
+  nObject = {
+    type: "inputRadio",
+    id: "loadAuthorZA",
+    label: "Largest",
+    name: "sort",
+    value: "sza",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Date New - Old
-  nObject = new OverlayObject();
-
-  nObject.type = "inputRadio";
-  nObject.id = "loadDateAZ";
-
-  nObject.checked = true;
-  nObject.label = "Newest";
-  nObject.name = "sort";
-  nObject.value = "dno";
+  nObject = {
+    type: "inputRadio",
+    id: "loadDateAZ",
+    checked: true,
+    label: "Newest",
+    name: "sort",
+    value: "dno",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Date Old - New
-  nObject = new OverlayObject();
-
-  nObject.type = "inputRadio";
-  nObject.id = "loadDateZA";
-
-  nObject.label = "Oldest";
-  nObject.name = "sort";
-  nObject.value = "don";
+  nObject = {
+    type: "inputRadio",
+    id: "loadDateZA",
+    label: "Oldest",
+    name: "sort",
+    value: "don",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Search
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Submit
-  nObject = new OverlayObject();
-
-  nObject.type = "inputButton";
-  nObject.id = "loadButton";
-
-  nObject.label = "Search";
-  nObject.value = "Search";
-
-  nObject.click = "loadGallery();";
+  nObject = {
+    type: "inputButton",
+    id: "loadButton",
+    label: "Search",
+    value: "Search",
+    click: "loadGallery()",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
@@ -4526,283 +4382,259 @@ function buildOverlays() {
   overlay.addScreen(nWindow);
 
   // Save
-  nWindow = new OverlayScreen();
-  nWindow.id = "save";
-  nWindow.title = "Save Pattern";
+  nWindow = new OverlayScreen("save", "Save Pattern");
 
   // Bar
   // Title
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "Details";
+  nObject = {
+    type: "text",
+    title: "Details",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Title Input
-  nObject = new OverlayObject();
-
-  nObject.type = "inputText";
-  nObject.id = "oTitle";
-
-  nObject.label = "Title";
-  nObject.placeholder = "Name your pattern";
-  nObject.value = "";
+  nObject = {
+    type: "inputText",
+    id: "oTitle",
+    label: "Title",
+    placeholder: "Name your pattern",
+    value: "",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Author Input
-  nObject = new OverlayObject();
-
-  nObject.type = "inputText";
-  nObject.id = "oAuthor";
-
-  nObject.label = "Author";
-  nObject.placeholder = "Use a pen name";
-  nObject.value = "";
+  nObject = {
+    type: "inputText",
+    id: "oAuthor",
+    label: "Author",
+    placeholder: "Use a pen name",
+    value: "",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Password Input
-  nObject = new OverlayObject();
-
-  nObject.type = "inputPassword";
-  nObject.id = "oPassword";
-
-  nObject.label = "Editing Password";
-  nObject.placeholder = "To keep your Pattern safe";
+  nObject = {
+    type: "inputPassword",
+    id: "oPassword",
+    label: "Editing Password",
+    placeholder: "To keep your Pattern safe",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Title Input
-  nObject = new OverlayObject();
-
-  nObject.type = "inputCheckbox";
-  nObject.id = "oPrivate";
-
-  nObject.label = "Show in Gallery";
-  nObject.checked = true;
+  nObject = {
+    type: "inputCheckbox",
+    id: "oPrivate",
+    label: "Show in Gallery",
+    checked: true,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Open)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
-  nObject.state = 1;
+  nObject = {
+    type: "inputWrapper",
+    state: 1,
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Title Input
-  nObject = new OverlayObject();
-
-  nObject.type = "inputButton";
-  nObject.id = "oSave";
-
-  nObject.focused = true;
-  nObject.label = "Save";
-  nObject.value = "Save";
-
-  nObject.click = "savePattern();";
+  nObject = {
+    type: "inputButton",
+    id: "oSave",
+    focused: true,
+    label: "Save",
+    value: "Save",
+    click: "savePattern()",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Wrapper (Close)
-  nObject = new OverlayObject();
-
-  nObject.type = "inputWrapper";
+  nObject = {
+    type: "inputWrapper",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Pane
   // Title Information
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "Title";
-  nObject.string[0] =
-    "Give your pattern a meaningful name that will allow you to find it later.";
+  nObject = {
+    type: "text",
+    title: "Title",
+    string: [
+      "Give your pattern a meaningful name that will allow you to find it later.",
+    ],
+  };
 
   nWindow.addObjectToPane(nObject);
 
   // Author Information
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "Author";
-  nObject.string[0] =
-    "Take credit for your creation! Pen names are unique, so use it for all of your patterns.";
+  nObject = {
+    type: "text",
+    title: "Author",
+    string: [
+      "Take credit for your creation! Pen names are unique, so use it for all of your patterns.",
+    ],
+  };
 
   nWindow.addObjectToPane(nObject);
 
   // Password Information
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "Password";
-  nObject.string[0] =
-    "Saving a new pattern? Create a memorable password to protect the design.";
-  nObject.string[1] =
-    "Updating an existing pattern? Enter your editing password.";
-  nObject.string[2] =
-    "If you forget your password, you'll need to contact us to get it reset.";
+  nObject = {
+    type: "text",
+    title: "Password",
+    string: [
+      "Saving a new pattern? Create a memorable password to protect the design.",
+      "Updating an existing pattern? Enter your editing password.",
+      "If you forget your password, you'll need to contact us to get it reset.",
+    ],
+  };
 
   nWindow.addObjectToPane(nObject);
 
   // Gallery Information
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "Gallery";
-  nObject.string[0] =
-    "Let the world see your design in the gallery, or keep it all to yourself.";
-  nObject.string[1] =
-    "Anyone with the exact title of your design will be able to find it using search.";
+  nObject = {
+    type: "text",
+    title: "Gallery",
+    string: [
+      "Let the world see your design in the gallery, or keep it all to yourself.",
+      "Anyone with the exact title of your design will be able to find it using search.",
+    ],
+  };
 
   nWindow.addObjectToPane(nObject);
 
   overlay.addScreen(nWindow);
 
   // Settings
-  nWindow = new OverlayScreen();
-  nWindow.id = "settings";
-  nWindow.title = "Settings";
+  nWindow = new OverlayScreen("settings", "Settings");
 
   // Bar
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.string[0] = "Use these toggles to configure the inlay designer.";
-  nObject.string[1] =
-    "Settings are not saved or preserved. Any changes from default will need to be set every time you start the designer.";
+  nObject = {
+    type: "text",
+    string: [
+      "Use these toggles to configure the inlay designer.",
+      "Settings are not saved or preserved. Any changes from default will need to be set every time you start the designer.",
+    ],
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Pane
   // Scale Size
-  nObject = new OverlayObject();
-  nObject.id = "toggleSize";
-  nObject.type = "toggle";
-
-  nObject.title = "Scale Size";
-  nObject.string[0] = "Small";
-  nObject.string[1] = "Large";
-
-  nObject.change = "toggleSize();";
+  nObject = {
+    id: "toggleSize",
+    type: "toggle",
+    title: "Scale Size",
+    string: ["Small", "Large"],
+    change: "toggleSize()",
+  };
 
   nWindow.addObjectToPane(nObject);
 
   // Show Empty Scales
-  nObject = new OverlayObject();
-  nObject.id = "toggleEmpty";
-  nObject.type = "toggle";
-
-  nObject.title = "Empty Scales";
-  nObject.string[0] = "Hide";
-  nObject.string[1] = "Show";
-
-  nObject.change = "toggleEmpty();";
+  nObject = {
+    id: "toggleEmpty",
+    type: "toggle",
+    title: "Empty Scales",
+    string: ["Hide", "Show"],
+    change: "toggleEmpty()",
+  };
 
   nWindow.addObjectToPane(nObject);
 
   // Theme
-  nObject = new OverlayObject();
-  nObject.id = "toggleTheme";
-  nObject.type = "toggle";
-
-  nObject.title = "Theme";
-  nObject.string[0] = "Light";
-  nObject.string[1] = "Dark";
-
-  nObject.change = "toggleTheme();";
+  nObject = {
+    id: "toggleTheme",
+    type: "toggle",
+    title: "Theme",
+    string: ["Light", "Dark"],
+    change: "toggleTheme()",
+  };
 
   nWindow.addObjectToPane(nObject);
 
   // Units
-  nObject = new OverlayObject();
-  nObject.id = "toggleUnits";
-  nObject.type = "toggle";
-
-  nObject.title = "Measurement Units";
-  nObject.string[0] = "Imperial";
-  nObject.string[1] = "Metric";
-
-  nObject.change = "toggleUnits();";
+  nObject = {
+    id: "toggleUnits",
+    type: "toggle",
+    title: "Measurement Units",
+    string: ["Imperial", "Metric"],
+    change: "toggleUnits()",
+  };
 
   nWindow.addObjectToPane(nObject);
 
   overlay.addScreen(nWindow);
 
   // Kickstarter
-  nWindow = new OverlayScreen();
-  nWindow.id = "kickstarter";
-  nWindow.title = "Kickstarter";
+  nWindow = new OverlayScreen("kickstarter", "Kickstarter");
 
   // Bar
 
@@ -4811,238 +4643,204 @@ function buildOverlays() {
   overlay.addScreen(nWindow);
 
   // Share
-  nWindow = new OverlayScreen();
-  nWindow.id = "share";
-  nWindow.title = "Share Pattern";
+  nWindow = new OverlayScreen("share", "Share Pattern");
 
   // Bar
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "Share to Social Media";
-  nObject.string[0] =
-    "Want to show your pattern to the world? Use your pattern URL from the address bar, or use any of these useful buttons!";
-  nObject.string[1] =
-    "If you don't see your pattern URL, you need to save your pattern before you can share it.";
+  nObject = {
+    type: "text",
+    title: "Share to Social Media",
+    string: [
+      "Want to show your pattern to the world? Use your pattern URL from the address bar, or use any of these useful buttons!",
+      "If you don't see your pattern URL, you need to save your pattern before you can share it.",
+    ],
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Pane
   // URL
-  nObject = new OverlayObject();
-
-  nObject.type = "share";
+  nObject = {
+    type: "share",
+  };
 
   nWindow.addObjectToPane(nObject);
 
   overlay.addScreen(nWindow);
 
   // Help & About
-  nWindow = new OverlayScreen();
-  nWindow.id = "help";
-  nWindow.title = "Help & About";
+  nWindow = new OverlayScreen("help", "Help & About");
 
   // Bar
   // About
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "About";
-  nObject.string[0] =
-    "Use this tool to create scalemail inlays and patterns, share your designs with the world, and browse the community submissions.";
-  nObject.string[1] = "This tool may be used for any purpose.";
+  nObject = {
+    type: "text",
+    title: "About",
+    string: [
+      "Use this tool to create scalemail inlays and patterns, share your designs with the world, and browse the community submissions.",
+      "This tool may be used for any purpose.",
+    ],
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Legal
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "Legal";
-  nObject.string[0] =
-    "Colours, sizes, weights, dimensions, and shapes are all estimates or visual representations and may not accurately reflect the actual physical properties or dimensions of that which they represent.";
-  nObject.string[1] =
-    "All patterns stored on our server are held anonymously. Your IP address and other computer identifying information is not stored.";
-  nObject.string[2] =
-    "All patterns created using this tool belong to the author. Lair of the Raven infers no copyright or other claim on user submitted patterns.";
-  nObject.string[3] =
-    "If you believe a pattern is in violation of your rights, please contact Lair of the Raven for removal.";
+  nObject = {
+    type: "text",
+    title: "Legal",
+    string: [
+      "Colours, sizes, weights, dimensions, and shapes are all estimates or visual representations and may not accurately reflect the actual physical properties or dimensions of that which they represent.",
+      "All patterns stored on our server are held anonymously. Your IP address and other computer identifying information is not stored.",
+      "All patterns created using this tool belong to the author. Lair of the Raven infers no copyright or other claim on user submitted patterns.",
+      "If you believe a pattern is in violation of your rights, please contact Lair of the Raven for removal.",
+    ],
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Links
   // Title
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "Links";
+  nObject = {
+    type: "text",
+    title: "Links",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Lair of the Raven
-  nObject = new OverlayObject();
-
-  nObject.type = "anchor";
-
-  nObject.string = "Lair of the Raven";
-  nObject.url = "http://lairoftheraven.uk";
+  nObject = {
+    type: "anchor",
+    string: "Lair of the Raven",
+    url: "http://lairoftheraven.uk",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Contact
   // Title
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "Contact";
+  nObject = {
+    type: "text",
+    title: "Contact",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // E-Mail
-  nObject = new OverlayObject();
-
-  nObject.type = "anchor";
-
-  nObject.string = "E-Mail";
-  nObject.url = "mailto:contact@lairoftheraven.uk";
+  nObject = {
+    type: "anchor",
+    string: "E-Mail",
+    url: "mailto:contact@lairoftheraven.uk",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Facebook
-  nObject = new OverlayObject();
-
-  nObject.type = "anchor";
-
-  nObject.string = "Facebook";
-  nObject.url = "https://www.facebook.com/lairoftheraven/";
+  nObject = {
+    type: "anchor",
+    string: "Facebook",
+    url: "https://www.facebook.com/lairoftheraven/",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Reddit
-  nObject = new OverlayObject();
-
-  nObject.type = "anchor";
-
-  nObject.string = "Reddit";
-  nObject.url = "https://www.reddit.com/r/lairoftheraven/";
+  nObject = {
+    type: "anchor",
+    string: "Reddit",
+    url: "https://www.reddit.com/r/lairoftheraven/",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Twitter
-  nObject = new OverlayObject();
-
-  nObject.type = "anchor";
-
-  nObject.string = "@LairoftheRaven";
-  nObject.url = "https://twitter.com/LairoftheRaven";
+  nObject = {
+    type: "anchor",
+    string: "@LairoftheRaven",
+    url: "https://twitter.com/LairoftheRaven",
+  };
 
   nWindow.addObjectToBar(nObject);
 
   // Pane
   // Tutorial Video
   // Title
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title = "Tutorial Playlist";
-  nObject.string[0] =
-    "Need help using the inlay designer? Check out our video tutorial series on YouTube for a detailed breakdown!";
+  nObject = {
+    type: "text",
+    title: "Tutorial Playlist",
+    string: [
+      "Need help using the inlay designer? Check out our video tutorial series on YouTube for a detailed breakdown!",
+    ],
+  };
 
   nWindow.addObjectToPane(nObject);
 
   // Introduction Video
-  nObject = new OverlayObject();
-
-  nObject.type = "brick";
-
-  nObject.title = "Introduction";
-  nObject.url =
-    "https://www.youtube.com/watch?v=wyye0o6paNE&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=1&t=3s";
-
-  nObject.src = "tutorialIntroThumb.jpg";
+  nObject = {
+    type: "brick",
+    title: "Introduction",
+    url: "https://www.youtube.com/watch?v=wyye0o6paNE&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=1&t=3s",
+    src: "tutorialIntroThumb.jpg",
+  };
 
   nWindow.addObjectToPane(nObject);
 
   // Interface Video
-  nObject = new OverlayObject();
-
-  nObject.type = "brick";
-
-  nObject.title = "User Interface Overview";
-  nObject.url =
-    "https://www.youtube.com/watch?v=7EZebcOiM9Q&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=2";
-
-  nObject.src = "tutorialIntroThumb.jpg";
+  nObject = {
+    type: "brick",
+    title: "User Interface Overview",
+    url: "https://www.youtube.com/watch?v=7EZebcOiM9Q&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=2",
+    src: "tutorialIntroThumb.jpg",
+  };
 
   nWindow.addObjectToPane(nObject);
 
   // Creating Video
-  nObject = new OverlayObject();
-
-  nObject.type = "brick";
-
-  nObject.title = "Creating a New Pattern";
-  nObject.url =
-    "https://www.youtube.com/watch?v=gTldguZj_yE&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=3";
-
-  nObject.src = "tutorialCreateThumb.jpg";
+  nObject = {
+    type: "brick",
+    title: "Creating a New Pattern",
+    url: "https://www.youtube.com/watch?v=gTldguZj_yE&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=3",
+    src: "tutorialCreateThumb.jpg",
+  };
 
   nWindow.addObjectToPane(nObject);
 
   // Gallery Video
-  nObject = new OverlayObject();
-
-  nObject.type = "brick";
-
-  nObject.title = "Saving, Loading, and Sharing";
-  nObject.url =
-    "https://www.youtube.com/watch?v=-raNeXvR2Fc&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=4";
-
-  nObject.src = "tutorialGalleryThumb.jpg";
+  nObject = {
+    type: "brick",
+    title: "Saving, Loading, and Sharing",
+    url: "https://www.youtube.com/watch?v=-raNeXvR2Fc&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=4",
+    src: "tutorialGalleryThumb.jpg",
+  };
 
   nWindow.addObjectToPane(nObject);
 
   // Future Video
-  nObject = new OverlayObject();
-
-  nObject.type = "brick";
-
-  nObject.title = "Future Development";
-  nObject.url =
-    "https://www.youtube.com/watch?v=PA1ckRVSgnE&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=5";
-
-  nObject.src = "tutorialIntroThumb.jpg";
+  nObject = {
+    type: "brick",
+    title: "Future Development",
+    url: "https://www.youtube.com/watch?v=PA1ckRVSgnE&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=5",
+    src: "tutorialIntroThumb.jpg",
+  };
 
   nWindow.addObjectToPane(nObject);
 
   overlay.addScreen(nWindow);
 
   // Compatability Error
-  nWindow = new OverlayScreen();
-  nWindow.id = "compError";
-  nWindow.title = "Compatability Issue";
+  nWindow = new OverlayScreen("compError", "Compatability Issue");
 
   // Bar
 
   // Pane
-  nObject = new OverlayObject();
-
-  nObject.type = "text";
-
-  nObject.title =
-    "Looks like the browser you are using doesn't support the latest web technologies.";
-  nObject.string[0] =
-    "The Scalemail Inlay Designer requires the latest web standards, especially Canvas modes and functions.";
-  nObject.string[1] =
-    "As the browser you are using doesn't support these features, I advise that you install the latest version of a web-standards compliant browser such as Firefox, Chrome, or Edge.";
-  nObject.string[2] =
-    "You can continue to use the designer, but be aware that certain things may not work properly, or display incorrectly.";
+  nObject = {
+    type: "text",
+    title:
+      "Looks like the browser you are using doesn't support the latest web technologies.",
+    string: [
+      "The Scalemail Inlay Designer requires the latest web standards, especially Canvas modes and functions.",
+      "As the browser you are using doesn't support these features, I advise that you install the latest version of a web-standards compliant browser such as Firefox, Chrome, or Edge.",
+      "You can continue to use the designer, but be aware that certain things may not work properly, or display incorrectly.",
+    ],
+  };
 
   nWindow.addObjectToPane(nObject);
 
@@ -6045,7 +5843,6 @@ function setupElements() {
   photoLayer.scaleCanvas(250, 250, false);
 
   // Overlay
-  overlay.setupOverlay();
   splashText = document.getElementById("splashText");
 }
 

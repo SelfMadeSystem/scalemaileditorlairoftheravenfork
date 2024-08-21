@@ -36,7 +36,7 @@ export type OverlayObject =
       type: "button";
       title: string;
       src: string;
-      click: string;
+      click: (e: MouseEvent) => void;
     }
   | {
       type: "text";
