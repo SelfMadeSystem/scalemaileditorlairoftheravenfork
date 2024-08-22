@@ -10,8 +10,7 @@
 import "./style.css";
 import ImageLoader from "./ImageLoader";
 import Entity from "./Entity";
-import { ColourPalette, PaletteColour } from "./Palette";
-import { Swatch } from "./Swatch";
+import { ColourPalette } from "./Palette";
 import { themes } from "./Theme";
 import { overlayInterface, setOverlay } from "./overlay/OverlayInterface";
 import { OverlayScreen } from "./overlay/OverlayScreen";
@@ -24,6 +23,7 @@ import { fontStyles } from "./Consts";
 import { uiIconSize, uiOffsetX, uiOffsetY } from "./ui";
 import { PatternMatrix } from "./PatternMatrix";
 import { TemplateSwatches } from "./TemplateSwatches";
+import { ImageMatrix } from "./ImageStuff";
 
 // Variables ==========================================================================================================
 const imageLoader = new ImageLoader(startDesigner);
@@ -260,59 +260,7 @@ function takePhoto() {
 
 // Image to Pattern Functions =========================================================================================
 // Objects
-function imageMatrix() {
-  this.rows = [];
 
-  this.clearData = function () {
-    this.rows = [];
-  };
-
-  this.addRow = function () {
-    this.rows.push(new imageRow());
-  };
-
-  this.addPixel = function (row, r, g, b, a, p) {
-    this.rows[row].addPixel(r, g, b, a, p);
-  };
-
-  this.sampleRegion = function (xOrigin, yOrigin, xWidth, yHeight) {
-    var x = 0;
-    var y = 0;
-
-    xWidth += xOrigin;
-    yHeight += yOrigin;
-
-    palette.clearCount();
-
-    for (y = yOrigin; y < yHeight; y++) {
-      for (x = xOrigin; x < xWidth; x++) {
-        palette.addCount(this.rows[y].pixels[x].p);
-      }
-    }
-  };
-}
-
-function imageRow() {
-  this.pixels = [];
-
-  this.addPixel = function (r, g, b, a, p) {
-    this.pixels.push(new imagePixel(r, g, b, a, p));
-  };
-}
-
-function imagePixel(r, g, b, a, p) {
-  if (r === undefined) r = 0;
-  if (g === undefined) g = 0;
-  if (b === undefined) b = 0;
-  if (a === undefined) a = 0;
-  if (p === undefined) p = 0;
-
-  this.r = r;
-  this.g = g;
-  this.b = b;
-  this.a = a;
-  this.p = p;
-}
 
 // Variables
 var itpCanvas;
@@ -324,7 +272,7 @@ var itpMemContext;
 var itpImage = false;
 var imageWidth;
 var imageHeight;
-var itpImageData = new imageMatrix();
+var itpImageData = new ImageMatrix();
 
 var itpStage = 0;
 var itpProcessRow = 0;
@@ -589,6 +537,7 @@ function itpGeneratePattern() {
 
     for (x = 0; x < sampleWidthArea - s; x += sampleSpacingX) {
       itpImageData.sampleRegion(
+        palette,
         Math.floor(x + s),
         Math.floor(y),
         Math.floor(sampleSpacingX),

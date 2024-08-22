@@ -37,7 +37,7 @@ export class DrawUtils {
   public scaleRatioHigh = 1.641975309;
 
   // Settings
-  public drawEmpty = false;
+  public drawEmpty = true;
 
   constructor(public imageAssets: ImageLoader) {}
 
