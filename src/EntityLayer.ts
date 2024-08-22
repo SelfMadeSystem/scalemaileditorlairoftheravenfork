@@ -1,6 +1,7 @@
 import { fontStyles, updateInterval } from "./Consts";
 import { DrawUtils } from "./DrawUtils";
 import Entity from "./Entity";
+import { TemplateSwatches } from "./TemplateSwatches";
 
 export class EntityLayer {
   public canvas: HTMLCanvasElement;
@@ -35,7 +36,8 @@ export class EntityLayer {
           width: number;
           height: number;
         },
-    private drawUtils: DrawUtils
+    private drawUtils: DrawUtils,
+    private swatches: TemplateSwatches,
   ) {
     if (typeof props === "string") {
       this.id = props;
@@ -152,7 +154,8 @@ export class EntityLayer {
               this.context,
               this.entities[x],
               this.offsetX,
-              this.offsetY
+              this.offsetY,
+              this.swatches
             );
             break;
 
@@ -206,8 +209,6 @@ export class EntityLayer {
   public panCanvas(moveX: number, moveY: number) {
     this.offsetX += moveX;
     this.offsetY += moveY;
-
-    this.redrawCanvas();
   }
 
   public panReset() {

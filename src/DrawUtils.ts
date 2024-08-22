@@ -2,6 +2,7 @@ import { fontStyles } from "./Consts";
 import Entity from "./Entity";
 import { EntityLayer } from "./EntityLayer";
 import ImageLoader from "./ImageLoader";
+import { TemplateSwatches } from "./TemplateSwatches";
 import { themes } from "./Theme";
 import { uiIconSize } from "./ui";
 
@@ -35,7 +36,10 @@ export class DrawUtils {
   public scaleRatioWide = 0.609022556;
   public scaleRatioHigh = 1.641975309;
 
-  constructor(public imageAssets: ImageLoader, public swatches: any) {}
+  // Settings
+  public drawEmpty = false;
+
+  constructor(public imageAssets: ImageLoader) {}
 
   public drawBackgroundDots(
     context: CanvasRenderingContext2D,
@@ -144,7 +148,8 @@ export class DrawUtils {
     context: CanvasRenderingContext2D,
     entity: Entity,
     offsetX: number,
-    offsetY: number
+    offsetY: number,
+    swatches: TemplateSwatches,
   ) {
     // Colour
     this.drawRect(context, entity, offsetX, offsetY);
@@ -155,7 +160,7 @@ export class DrawUtils {
     if (entity.fillPalette?.brushed === true) {
       this.drawRect(context, entity, offsetX, offsetY);
       context.globalCompositeOperation = "overlay";
-      context.fillStyle = this.swatches.textureSwatches[1].pattern;
+      context.fillStyle = swatches.textureSwatches[1].pattern ?? "#f00";
       context.fill();
       context.globalCompositeOperation = "source-over";
     }

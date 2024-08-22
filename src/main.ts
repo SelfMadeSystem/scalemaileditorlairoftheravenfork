@@ -23,16 +23,20 @@ import { EntityLayer } from "./EntityLayer";
 import { fontStyles } from "./Consts";
 import { uiIconSize, uiOffsetX, uiOffsetY } from "./ui";
 import { PatternMatrix } from "./PatternMatrix";
+import { TemplateSwatches } from "./TemplateSwatches";
 
 // Variables ==========================================================================================================
 const imageLoader = new ImageLoader(startDesigner);
 
-// Swatch Variables
-var swatches = new TemplateSwatches();
-var drawEmpty = true;
+// Palette Variables
+const palette = new ColourPalette();
+var activeColour = 2;
 
 // Draw Utils
-const drawUtils = new DrawUtils(imageLoader, swatches);
+const drawUtils = new DrawUtils(imageLoader);
+
+// Swatch Variables
+const swatches = new TemplateSwatches(palette, drawUtils);
 
 // Canvases
 const backgroundCanvas = document.getElementById(
@@ -44,15 +48,16 @@ const interactionLayer = document.getElementById(
   "canvasWrapper"
 ) as HTMLDivElement;
 
-const editorLayer = new EntityLayer("canvasEditor", drawUtils);
-const uiLayer = new EntityLayer("canvasUI", drawUtils);
+const editorLayer = new EntityLayer("canvasEditor", drawUtils, swatches);
+const uiLayer = new EntityLayer("canvasUI", drawUtils, swatches);
 const photoLayer = new EntityLayer(
   {
     id: "photoLayer",
     width: 250,
     height: 250,
   },
-  drawUtils
+  drawUtils,
+  swatches
 );
 
 // Interaction Variables
@@ -67,12 +72,8 @@ var panKey = false;
 // Overlay Variables
 var splashText;
 
-// Palette Variables
-var palette = new ColourPalette();
-var activeColour = 2;
-
 // Pattern Variables
-var editorPattern = new PatternMatrix();
+const editorPattern = new PatternMatrix();
 
 // Ruler Variables
 var rulerUnits = "metric";
@@ -115,340 +116,6 @@ var uiToolbox = new UiSection();
 var uiCamera = new UiSection();
 
 var currentTool = "toolboxCursor";
-
-// Objects ============================================================================================================
-// Palette
-
-// Pattern
-
-// Swatches
-function TemplateSwatches() {
-  this.gradientSwatches = [];
-  this.textureSwatches = [];
-  this.scaleSwatches = [];
-  this.patternSwatch;
-
-  this.shadowBlur = 3;
-  this.shadowX = 0;
-  this.shadowY = 3;
-  this.shadowColour = "rgba(0, 0, 0, 0.25)";
-
-  /* Swatch Functions */
-  this.generateSwatches = function () {
-    var x = 0;
-    var y = 0;
-
-    // Gradients
-    y = 2;
-
-    for (x = 0; x < y; x++) {
-      this.gradientSwatches.push(this.generateSwatch("gradientSwatch-" + x));
-    }
-
-    // Textures
-    y = 2;
-
-    for (x = 0; x < y; x++) {
-      this.textureSwatches.push(this.generateSwatch("textureSwatch-" + x));
-    }
-
-    // Scales
-    y = palette.colours.length;
-
-    for (x = 0; x < y; x++) {
-      this.scaleSwatches.push(this.generateSwatch("scaleSwatch-" + x));
-    }
-
-    // Pattern
-    this.patternSwatch = this.generateSwatch("patternSwatch-" + x);
-  };
-
-  this.generateSwatch = function (id: string) {
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d")!;
-    var newSwatch = new Swatch(id, canvas, context);
-
-    //document.body.appendChild(newSwatch.canvas);
-
-    return newSwatch;
-  };
-
-  this.scaleSwatch = function (swt: Swatch, height: number, width: number) {
-    swt.height = height;
-    swt.width = width;
-
-    swt.canvas.height = height;
-    swt.canvas.width = width;
-
-    swt.canvas.style.height = height + "px";
-    swt.canvas.style.width = width + "px";
-  };
-
-  this.regenerateSwatches = function () {
-    this.generateGradientSwatches();
-    this.generateTextureSwatches();
-    this.generateScaleSwatches();
-    this.generatePatternSwatch(editorPattern);
-  };
-
-  /* Pattern Functions */
-  this.generatePatternSwatch = function (pattern) {
-    // Resize Canvas
-    var height =
-      (pattern.height - 1) * drawUtils.scaleSpacingY +
-      this.scaleSwatches[0].height;
-    var width =
-      pattern.width * drawUtils.scaleSpacingX + drawUtils.scaleWidthPx;
-
-    this.scaleSwatch(this.patternSwatch, height, width);
-
-    // Draw scales
-    var patternHeight = pattern.height;
-    var patternWidth = pattern.width;
-
-    var sHalf = 0;
-
-    var x = 0;
-    var y = 0;
-
-    var limit = 0;
-
-    if (drawEmpty === false) {
-      limit = 1;
-    }
-
-    for (y = patternHeight - 1; y >= 0; y--) {
-      if (pattern.matrix[y][0].colour == 0) {
-        // Odd
-        sHalf = 0;
-      } else {
-        // Even
-        sHalf = drawUtils.scaleSpacingXHalf;
-      }
-
-      // Add Scale Entity
-      for (x = 0; x < patternWidth; x++) {
-        if (pattern.matrix[y][x].colour > limit) {
-          this.patternSwatch.context.drawImage(
-            this.scaleSwatches[pattern.matrix[y][x].colour].canvas,
-            Math.round(sHalf + drawUtils.scaleSpacingX * x),
-            Math.round(drawUtils.scaleSpacingY * y)
-          );
-        }
-      }
-    }
-  };
-
-  /* Scale Functions */
-  this.generateScaleSwatches = function () {
-    var x = 0;
-    var y = palette.colours.length;
-
-    for (x = 0; x < y; x++) {
-      this.scaleSwatch(
-        this.scaleSwatches[x],
-        drawUtils.scaleHeightPx + this.shadowY + this.shadowBlur / 2,
-        drawUtils.scaleWidthPx + this.shadowX + this.shadowBlur / 2
-      );
-      this.generateScaleSwatch(
-        this.scaleSwatches[x],
-        palette.colours[x].hex,
-        palette.colours[x].a,
-        palette.colours[x].brushed,
-        palette.colours[x].shiny,
-        palette.colours[x].plastic
-      );
-    }
-  };
-
-  this.generateScaleSwatch = function (
-    swatch,
-    hex,
-    alpha,
-    brushed,
-    mirror,
-    plastic
-  ) {
-    if (brushed === undefined) brushed = false;
-    if (mirror === undefined) mirror = false;
-    if (plastic === undefined) plastic = false;
-
-    var v = 0;
-    var z = 0;
-
-    if (alpha <= 60) {
-      drawUtils.drawScalePath(swatch.context, 0, 0);
-      swatch.context.fillStyle = hex;
-      swatch.context.fill("evenodd");
-    } else {
-      // Flat Colour
-      swatch.context.shadowBlur = this.shadowBlur;
-      swatch.context.shadowColor = this.shadowColour;
-      swatch.context.shadowOffsetX = this.shadowX;
-      swatch.context.shadowOffsetY = this.shadowY;
-
-      drawUtils.drawScalePath(swatch.context, 0, 0);
-      swatch.context.fillStyle = hex;
-      swatch.context.fill("evenodd");
-      drawUtils.shapeShadowReset(swatch.context);
-
-      swatch.context.shadowBlur = 0;
-      swatch.context.shadowColor = this.shadowColour;
-      swatch.context.shadowOffsetX = 0;
-      swatch.context.shadowOffsetY = 0;
-
-      // Brush Texture
-      if (mirror === false && plastic === false) {
-        if (brushed === true) {
-          v = 1;
-        }
-
-        swatch.context.globalCompositeOperation = "overlay";
-
-        if (swatch.context.globalCompositeOperation !== "overlay") {
-          console.log("Browser doesn't support the overlay blend mode.");
-        } else {
-          drawUtils.drawScalePath(swatch.context, 0, 0);
-          swatch.context.fillStyle = this.textureSwatches[v].pattern;
-          swatch.context.fill("evenodd");
-        }
-      }
-
-      // Sheen Gradient
-      if (mirror === true) {
-        z = 1;
-      }
-
-      swatch.context.globalCompositeOperation = "overlay";
-
-      if (swatch.context.globalCompositeOperation !== "overlay") {
-        console.log("Browser doesn't support the overlay blend mode.");
-      } else {
-        drawUtils.drawScalePath(swatch.context, 0, 0);
-        swatch.context.fillStyle = this.gradientSwatches[z].gradient;
-        swatch.context.fill("evenodd");
-      }
-    }
-  };
-
-  /* Texture Functions */
-  this.generateTextureSwatches = function () {
-    var x = 0;
-    var y = 2;
-
-    var tex = [0.1, 0.225];
-
-    for (x = 0; x < y; x++) {
-      this.scaleSwatch(
-        this.textureSwatches[x],
-        drawUtils.scaleHeightPx,
-        drawUtils.scaleHeightPx
-      );
-      this.generateTextureSwatch(this.textureSwatches[x], tex[x]);
-    }
-  };
-
-  this.generateTextureSwatch = function (swatch: Swatch, alphaMod: number) {
-    swatch.context.globalAlpha = alphaMod;
-    const img = drawUtils.imageAssets.getImage("textureBrushed");
-    if (img) {
-      swatch.context.drawImage(img, 0, 0);
-    } else {
-      swatch.context.fillStyle = "rgba(255, 0, 0, 1)"; // obvious colour for debugging
-      swatch.context.fillRect(0, 0, swatch.width, swatch.height);
-    }
-
-    const pattern = swatch.context.createPattern(swatch.canvas, "no-repeat");
-    swatch.pattern = pattern ?? undefined;
-  };
-
-  /* Gradient Functions */
-  this.generateGradientSwatches = function () {
-    var x = 0;
-    var y = 2;
-
-    var gra = [0, 30];
-
-    for (x = 0; x < y; x++) {
-      this.scaleSwatch(
-        this.gradientSwatches[x],
-        drawUtils.scaleHeightPx,
-        drawUtils.scaleWidthPx
-      );
-      this.generateGradientSwatch(this.gradientSwatches[x], gra[x]);
-    }
-  };
-
-  this.generateGradientSwatch = function (swatch: Swatch, rgbaMod: number) {
-    var gradient = swatch.context.createLinearGradient(0, 0, swatch.width, 0);
-
-    gradient.addColorStop(
-      0,
-      "rgba(" +
-        (85 - rgbaMod) +
-        ", " +
-        (85 - rgbaMod) +
-        ", " +
-        (85 - rgbaMod) +
-        ", 1)"
-    );
-
-    gradient.addColorStop(
-      0.425,
-      "rgba(" +
-        (104 - rgbaMod) +
-        ", " +
-        (104 - rgbaMod) +
-        ", " +
-        (104 - rgbaMod) +
-        ", 1)"
-    );
-    gradient.addColorStop(
-      0.475,
-      "rgba(" +
-        (119 - rgbaMod) +
-        ", " +
-        (119 - rgbaMod) +
-        ", " +
-        (119 - rgbaMod) +
-        ", 1)"
-    );
-
-    gradient.addColorStop(
-      0.525,
-      "rgba(" +
-        (119 + rgbaMod) +
-        ", " +
-        (119 + rgbaMod) +
-        ", " +
-        (119 + rgbaMod) +
-        ", 1)"
-    );
-    gradient.addColorStop(
-      0.575,
-      "rgba(" +
-        (134 + rgbaMod) +
-        ", " +
-        (134 + rgbaMod) +
-        ", " +
-        (134 + rgbaMod) +
-        ", 1)"
-    );
-
-    gradient.addColorStop(
-      1,
-      "rgba(" +
-        (175 + rgbaMod) +
-        ", " +
-        (175 + rgbaMod) +
-        ", " +
-        (175 + rgbaMod) +
-        ", 1)"
-    );
-
-    swatch.gradient = gradient;
-  };
-}
 
 // General Functions ====================================================================================================
 function addEvent(object, type, method) {
@@ -543,7 +210,7 @@ function takePhoto() {
 
   // Configure Memory Canvas
   // Set Scale Radius
-  drawEmpty = false;
+  drawUtils.drawEmpty = false;
   zoomReset();
 
   // Scale to Pattern Size
@@ -587,7 +254,7 @@ function takePhoto() {
   a.click();
 
   // Restore Original Canvas
-  drawEmpty = true;
+  drawUtils.drawEmpty = true;
   zoomExtents(editorPattern);
 }
 
@@ -1001,7 +668,7 @@ function zoomCanvas(inOut) {
   }
 
   updateScaleVariables(drawUtils.scaleRadius);
-  swatches.regenerateSwatches();
+  swatches.regenerateSwatches(editorPattern, drawUtils);
 
   drawBg();
   editorLayer.redrawCanvas();
@@ -1038,8 +705,8 @@ function zoomExtents(sourcePattern, targetCanvas) {
 
   if (targetCanvas === false) {
     editorLayer.panReset();
-
     zoomCanvas(1);
+    editorLayer.redrawCanvas(swatches);
   } else {
     target.panReset();
   }
@@ -1262,6 +929,7 @@ function mouseHandler(event) {
           event.pageX - panCenterX,
           event.pageY - panCenterY
         );
+        editorLayer.redrawCanvas(swatches);
         drawBg();
 
         panCenterX = event.pageX;
@@ -1372,7 +1040,7 @@ function mouseDownEditor(y, x, b) {
       case "toolboxCursor":
       case "toolboxBrush":
         editorPattern.colourScale(y, x, activeColour, true);
-        swatches.generatePatternSwatch(editorPattern);
+        swatches.generatePatternSwatch(editorPattern, drawUtils);
         editorLayer.redrawCanvas();
         drawBg();
         break;
@@ -1383,20 +1051,20 @@ function mouseDownEditor(y, x, b) {
       //case "toolboxColumnPaste":
       case "toolboxFillRow":
         editorPattern.fillRow(y, activeColour);
-        swatches.generatePatternSwatch(editorPattern);
+        swatches.generatePatternSwatch(editorPattern, drawUtils);
         editorLayer.redrawCanvas();
         drawBg();
         break;
       case "toolboxFillColumn":
         editorPattern.fillColumn(x, y, activeColour);
-        swatches.generatePatternSwatch(editorPattern);
+        swatches.generatePatternSwatch(editorPattern, drawUtils);
         editorLayer.redrawCanvas();
         drawBg();
         break;
       case "toolboxFillColour":
         editorPattern.fill(y, x, activeColour);
         editorPattern.colourScale(y, x, activeColour, false);
-        swatches.generatePatternSwatch(editorPattern);
+        swatches.generatePatternSwatch(editorPattern, drawUtils);
         editorLayer.redrawCanvas();
         drawBg();
         break;
@@ -1406,7 +1074,7 @@ function mouseDownEditor(y, x, b) {
       //case "toolboxRowPaste":
       case "toolboxReplace":
         editorPattern.replaceAll(editorPattern.getColour(y, x), activeColour);
-        swatches.generatePatternSwatch(editorPattern);
+        swatches.generatePatternSwatch(editorPattern, drawUtils);
         editorLayer.redrawCanvas();
         drawBg();
         break;
@@ -1435,7 +1103,7 @@ function mouseHoverEditor(y, x, b) {
         setCursor("Brush");
         if (clicked) {
           editorPattern.colourScale(y, x, activeColour, true);
-          swatches.generatePatternSwatch(editorPattern);
+          swatches.generatePatternSwatch(editorPattern, drawUtils);
           editorLayer.redrawCanvas();
           drawBg();
         }
@@ -1487,6 +1155,7 @@ function mouseClickUI(id) {
     // Camera Controls
     case "cameraCenter":
       editorLayer.panReset();
+      editorLayer.redrawCanvas(swatches);
       break;
 
     case "cameraExtents":
@@ -1499,8 +1168,8 @@ function mouseClickUI(id) {
 
     case "cameraReset":
       editorLayer.panReset();
-
       zoomReset();
+      editorLayer.redrawCanvas(swatches);
       break;
 
     case "cameraPhoto":
@@ -1550,7 +1219,7 @@ function mouseClickUI(id) {
           true;
       }
 
-      if (drawEmpty === true) {
+      if (drawUtils.drawEmpty === true) {
         (document.getElementById("toggleEmpty") as HTMLInputElement).checked =
           true;
       }
@@ -2267,514 +1936,6 @@ function buildOverlays() {
 }
 
 // Palette Functions ==================================================================================================
-function buildPalette() {
-  // Void
-  let nEnt = new PaletteColour();
-
-  nEnt.id = "vod";
-  nEnt.name = "Void";
-
-  nEnt.r = -255;
-  nEnt.g = -255;
-  nEnt.b = -255;
-  nEnt.a = -255;
-  nEnt.hex = "rgba(0, 0, 0, 0)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Empty
-  nEnt = new PaletteColour();
-
-  nEnt.id = "non";
-  nEnt.name = "Empty";
-
-  nEnt.r = 0;
-  nEnt.g = 0;
-  nEnt.b = 0;
-  nEnt.a = -255;
-  nEnt.hex = "rgba(0, 0, 0, 0.25)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Aluminium (Brushed)
-  nEnt = new PaletteColour();
-
-  nEnt.id = "alm";
-  nEnt.name = "Aluminium (Brushed)";
-
-  nEnt.r = 195;
-  nEnt.g = 195;
-  nEnt.b = 197;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(195, 195, 197, 1)";
-
-  nEnt.brushed = true;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Aluminium (Mirror)
-  nEnt = new PaletteColour();
-
-  nEnt.id = "als";
-  nEnt.name = "Aluminium (Mirror)";
-
-  nEnt.r = 228;
-  nEnt.g = 228;
-  nEnt.b = 224;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(228, 228, 224, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = true;
-
-  palette.addColour(nEnt);
-
-  // Black
-  nEnt = new PaletteColour();
-
-  nEnt.id = "blk";
-  nEnt.name = "Black";
-
-  nEnt.r = 32;
-  nEnt.g = 36;
-  nEnt.b = 39;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(32, 36, 39, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Blue
-  nEnt = new PaletteColour();
-
-  nEnt.id = "Blu";
-  nEnt.name = "Blue";
-
-  nEnt.r = 17;
-  nEnt.g = 76;
-  nEnt.b = 173;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(17, 76, 173, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Bronze
-  nEnt = new PaletteColour();
-
-  nEnt.id = "brz";
-  nEnt.name = "Bronze";
-
-  nEnt.r = 133;
-  nEnt.g = 108;
-  nEnt.b = 46;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(133, 108, 46, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Champagne
-  nEnt = new PaletteColour();
-
-  nEnt.id = "cpg";
-  nEnt.name = "Champange";
-
-  nEnt.r = 150;
-  nEnt.g = 150;
-  nEnt.b = 126;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(150, 150, 126, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Copper (Shiny)
-  nEnt = new PaletteColour();
-
-  nEnt.id = "cpr";
-  nEnt.name = "Copper (Shiny)";
-
-  nEnt.r = 138;
-  nEnt.g = 99;
-  nEnt.b = 66;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(138, 99, 66, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = true;
-
-  palette.addColour(nEnt);
-
-  // Frost
-  nEnt = new PaletteColour();
-
-  nEnt.id = "fst";
-  nEnt.name = "Frost";
-
-  nEnt.r = 224;
-  nEnt.g = 225;
-  nEnt.b = 223;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(224, 225, 223, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Gold (Brushed)
-  nEnt = new PaletteColour();
-
-  nEnt.id = "gld";
-  nEnt.name = "Gold (Brushed)";
-
-  nEnt.r = 170;
-  nEnt.g = 166;
-  nEnt.b = 124;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(170, 166, 124, 1)";
-
-  nEnt.brushed = true;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Gold (Mirror)
-  nEnt = new PaletteColour();
-
-  nEnt.id = "glm";
-  nEnt.name = "Gold (Mirror)";
-
-  nEnt.r = 207;
-  nEnt.g = 193;
-  nEnt.b = 146;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(207, 193, 146, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = true;
-
-  palette.addColour(nEnt);
-
-  // Green
-  nEnt = new PaletteColour();
-
-  nEnt.id = "grn";
-  nEnt.name = "Green";
-
-  nEnt.r = 24;
-  nEnt.g = 79;
-  nEnt.b = 47;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(24, 79, 47, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Orange
-  nEnt = new PaletteColour();
-
-  nEnt.id = "org";
-  nEnt.name = "Orange";
-
-  nEnt.r = 210;
-  nEnt.g = 100;
-  nEnt.b = 32;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(210, 100, 32, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Pink
-  nEnt = new PaletteColour();
-
-  nEnt.id = "pnk";
-  nEnt.name = "Pink";
-
-  nEnt.r = 183;
-  nEnt.g = 51;
-  nEnt.b = 134;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(183, 51, 134, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Purple
-  nEnt = new PaletteColour();
-
-  nEnt.id = "ppl";
-  nEnt.name = "Purple";
-
-  nEnt.r = 70;
-  nEnt.g = 54;
-  nEnt.b = 191;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(70, 54, 191, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Red
-  nEnt = new PaletteColour();
-
-  nEnt.id = "red";
-  nEnt.name = "Red";
-
-  nEnt.r = 146;
-  nEnt.g = 29;
-  nEnt.b = 19;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(146, 29, 19, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = false;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Clear (Plastic)
-  nEnt = new PaletteColour();
-
-  nEnt.id = "clr";
-  nEnt.name = "Clear (Plastic)";
-
-  nEnt.r = 255;
-  nEnt.g = 255;
-  nEnt.b = 255;
-  nEnt.a = 60;
-  nEnt.hex = "rgba(255, 255, 255, 0.25)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = true;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Black (Plastic)
-  nEnt = new PaletteColour();
-
-  nEnt.id = "blp";
-  nEnt.name = "Black (Plastic)";
-
-  nEnt.r = 43;
-  nEnt.g = 44;
-  nEnt.b = 39;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(43, 44, 39, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = true;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Glow in the Dark
-  nEnt = new PaletteColour();
-
-  nEnt.id = "gtd";
-  nEnt.name = "Glow in the Dark (Plastic)";
-
-  nEnt.r = 69;
-  nEnt.g = 179;
-  nEnt.b = 112;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(69, 179, 112, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = true;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  //Meads custom stuff IDs for mead are 4 chars
-
-  // Light purple
-  nEnt = new PaletteColour();
-
-  nEnt.id = "lprp";
-  nEnt.name = "Light purple";
-
-  nEnt.r = 175;
-  nEnt.g = 131;
-  nEnt.b = 208;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(175, 131, 208, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = true;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Sky blue
-  nEnt = new PaletteColour();
-
-  nEnt.id = "skbl";
-  nEnt.name = "Sky blue";
-
-  nEnt.r = 124;
-  nEnt.g = 202;
-  nEnt.b = 212;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(124, 202, 212, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = true;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Lime
-  nEnt = new PaletteColour();
-
-  nEnt.id = "lime";
-  nEnt.name = "Lime";
-
-  nEnt.r = 158;
-  nEnt.g = 207;
-  nEnt.b = 90;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(158, 207, 90, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = true;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Gold
-  nEnt = new PaletteColour();
-
-  nEnt.id = "gold";
-  nEnt.name = "Gold (more yellow but ok)";
-
-  nEnt.r = 255;
-  nEnt.g = 255;
-  nEnt.b = 0;
-  nEnt.a = 255;
-  nEnt.hex = "rgba(255, 255, 0, 1)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = true;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Transparent red
-  nEnt = new PaletteColour();
-
-  nEnt.id = "tred";
-  nEnt.name = "Transparent red";
-
-  nEnt.r = 255;
-  nEnt.g = 0;
-  nEnt.b = 0;
-  nEnt.a = 255 * 0.1;
-  nEnt.hex = "rgba(255, 0, 0, 0.3)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = true;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Transparent blue
-  nEnt = new PaletteColour();
-
-  nEnt.id = "tblu";
-  nEnt.name = "Transparent blue";
-
-  nEnt.r = 0;
-  nEnt.g = 0;
-  nEnt.b = 255;
-  nEnt.a = 255 * 0.1;
-  nEnt.hex = "rgba(0, 0, 255, 0.3)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = true;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Transparent green
-  nEnt = new PaletteColour();
-
-  nEnt.id = "tgrn";
-  nEnt.name = "Transparent green";
-
-  nEnt.r = 0;
-  nEnt.g = 255;
-  nEnt.b = 0;
-  nEnt.a = 255 * 0.1;
-  nEnt.hex = "rgba(0, 255, 0, 0.3)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = true;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-
-  // Transparent yellow
-  nEnt = new PaletteColour();
-
-  nEnt.id = "tylw";
-  nEnt.name = "Transparent yellow";
-
-  nEnt.r = 255;
-  nEnt.g = 255;
-  nEnt.b = 0;
-  nEnt.a = 255 * 0.1;
-  nEnt.hex = "rgba(255, 255, 0, 0.3)";
-
-  nEnt.brushed = false;
-  nEnt.plastic = true;
-  nEnt.shiny = false;
-
-  palette.addColour(nEnt);
-}
-
 function setActiveColour(colour) {
   activeColour = colour;
   createInterface();
@@ -2844,7 +2005,7 @@ function newFromShape() {
   createInterface();
   uiLayer.redrawCanvas();
   overlayInterface.hideOverlay();
-  swatches.generatePatternSwatch(editorPattern);
+  swatches.generatePatternSwatch(editorPattern, drawUtils);
   editorLayer.redrawCanvas();
   drawBg();
 }
@@ -2994,18 +2155,13 @@ function startDesigner() {
   splashText.innerHTML = "Calculating scales...";
   updateScaleVariables(75);
 
-  // Palette
-  splashText.innerHTML = "Building colours...";
-  buildPalette();
-
   // Pattern
   newPattern(editorPattern, 5, 9, 1);
 
   // Templates
   splashText.innerHTML = "Generating swatches...";
 
-  swatches.generateSwatches();
-  swatches.regenerateSwatches();
+  swatches.regenerateSwatches(editorPattern, drawUtils);
 
   // Editor
   let nEnt = new Entity();
@@ -3068,13 +2224,13 @@ function startDesigner() {
 
 // Toggle Settings ====================================================================================================
 function toggleEmpty() {
-  if (drawEmpty === true) {
-    drawEmpty = false;
+  if (drawUtils.drawEmpty === true) {
+    drawUtils.drawEmpty = false;
   } else {
-    drawEmpty = true;
+    drawUtils.drawEmpty = true;
   }
 
-  swatches.regenerateSwatches();
+  swatches.regenerateSwatches(editorPattern, drawUtils);
   editorLayer.redrawCanvas();
 }
 
