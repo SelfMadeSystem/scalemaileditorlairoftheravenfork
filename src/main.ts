@@ -186,7 +186,6 @@ var currentTool = "toolboxCursor";
 // Objects ============================================================================================================
 // Interface
 
-
 // Layer
 function EntityLayer() {
   this.canvas;
@@ -345,10 +344,6 @@ function EntityLayer() {
               this.offsetX,
               this.offsetY
             );
-            break;
-
-          case "scale":
-            //drawScale(this.context, this.entities[x], this.offsetX, this.offsetY);
             break;
 
           case "text":
@@ -1505,7 +1500,7 @@ function itpSetCanvas() {
   itpContext.font = "20px Montserrat";
 }
 
-function itpCanvasResize(event) {
+function itpCanvasResize() {
   var w = itpCanvas.parentElement.clientWidth;
   var h = itpCanvas.parentElement.clientHeight;
   itpCanvas.height = h;
@@ -1540,11 +1535,6 @@ function itpCanvasRedraw() {
 function itpDisableButtons() {
   document.getElementById("o-Prev").disabled = true;
   document.getElementById("o-Next").disabled = true;
-}
-
-function itpEnableButtons() {
-  document.getElementById("o-Prev").disabled = false;
-  document.getElementById("o-Next").disabled = false;
 }
 
 /* Processing */
@@ -1781,44 +1771,6 @@ function itpSendToEditor() {
 }
 
 // Input Functions ====================================================================================================
-function checkRestricted(string, extended) {
-  var x = 0;
-  var y = restrictedWords.length;
-
-  string = string.toLowerCase();
-
-  for (x = 0; x < y; x++) {
-    if (string.includes(restrictedWords[x])) {
-      console.log("Couldn't you use a nicer word than that?");
-      return true;
-    }
-  }
-
-  if (extended === true) {
-    y = restrictedAuthors.length;
-
-    for (x = 0; x < y; x++) {
-      if (string.includes(restrictedAuthors[x])) {
-        console.log("Couldn't you use a nicer word than that?");
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-function checkCharacters(string) {
-  string = string.toLowerCase();
-
-  if (allowedCharacters.test(string) === false) {
-    console.log("Invalid character used.");
-    return true;
-  }
-
-  return false;
-}
-
 function checkRadio(radios) {
   var x = 0;
   var y = radios.length;
@@ -1956,24 +1908,28 @@ function mouseHandler(event) {
             }
 
             // Expanding
-            if (uiLayer.expanded !== false) {
-              if (uiLayer.expanded.group != uiLayer.entities[x].object.group) {
+            if (uiLayer.entities[x].object) {
+              if (uiLayer.expanded !== false) {
+                if (
+                  uiLayer.expanded.group != uiLayer.entities[x].object.group
+                ) {
+                  if (uiLayer.entities[x].object.expandable === true) {
+                    uiLayer.expanded.expanded = false;
+                    uiLayer.expanded = uiLayer.entities[x].object;
+                    uiLayer.entities[x].object.expanded = true;
+                    uiChange = true;
+                  } else {
+                    uiLayer.expanded.expanded = false;
+                    uiLayer.expanded = false;
+                    uiChange = true;
+                  }
+                }
+              } else {
                 if (uiLayer.entities[x].object.expandable === true) {
-                  uiLayer.expanded.expanded = false;
                   uiLayer.expanded = uiLayer.entities[x].object;
                   uiLayer.entities[x].object.expanded = true;
                   uiChange = true;
-                } else {
-                  uiLayer.expanded.expanded = false;
-                  uiLayer.expanded = false;
-                  uiChange = true;
                 }
-              }
-            } else {
-              if (uiLayer.entities[x].object.expandable === true) {
-                uiLayer.expanded = uiLayer.entities[x].object;
-                uiLayer.entities[x].object.expanded = true;
-                uiChange = true;
               }
             }
 
@@ -2876,22 +2832,6 @@ function buildOverlays() {
 
   overlayInterface.addScreen(nWindow);
 
-  // Swap Colours
-  nWindow = new OverlayScreen("swapPalette", "Swap Colours");
-
-  // Bar
-
-  // Pane
-  // Canvas
-  nObject = {
-    type: "canvas",
-    id: "oCanvas",
-  };
-
-  nWindow.addObjectToPane(nObject);
-
-  overlayInterface.addScreen(nWindow);
-
   // Settings
   nWindow = new OverlayScreen("settings", "Settings");
 
@@ -2950,15 +2890,6 @@ function buildOverlays() {
   };
 
   nWindow.addObjectToPane(nObject);
-
-  overlayInterface.addScreen(nWindow);
-
-  // Kickstarter
-  nWindow = new OverlayScreen("kickstarter", "Kickstarter");
-
-  // Bar
-
-  // Pane
 
   overlayInterface.addScreen(nWindow);
 
@@ -3821,53 +3752,6 @@ function patternShapeDiamond(target, colour) {
 }
 
 // Scale Functions ====================================================================================================
-function calculateIntersection(x0, y0, r0, x1, y1, r1) {
-  var a, dx, dy, d, h, rx, ry;
-  var x2, y2;
-
-  dx = x1 - x0;
-  dy = y1 - y0;
-  d = Math.sqrt(dy * dy + dx * dx);
-  a = (r0 * r0 - r1 * r1 + d * d) / (2.0 * d);
-  x2 = x0 + (dx * a) / d;
-  y2 = y0 + (dy * a) / d;
-  h = Math.sqrt(r0 * r0 - a * a);
-  rx = -dy * (h / d);
-  ry = dx * (h / d);
-
-  /* Intersection Points */
-  var xi = x2 + rx;
-  var xi_prime = x2 - rx;
-  var yi = y2 + ry;
-  var yi_prime = y2 - ry;
-
-  return [xi, xi_prime, yi, yi_prime];
-}
-
-// Server Functions =====================================================================================================
-function sendRequest(target, request, responseFunction) {
-  var ajaxRequest = new XMLHttpRequest();
-
-  ajaxRequest.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status == 200) {
-      responseFunction(this.responseText);
-    } else if (this.status > 399) {
-      console.log("Unable to reach the server.");
-    }
-  };
-
-  ajaxRequest.open(
-    "POST",
-    "https://scalemail.lairoftheraven.uk/parts/" + target + ".php",
-    true
-  );
-  ajaxRequest.setRequestHeader(
-    "Content-type",
-    "application/x-www-form-urlencoded"
-  );
-  ajaxRequest.send(request);
-}
-
 function updateScaleVariables(radius) {
   if (radius === undefined) radius = 75;
 
@@ -3971,14 +3855,6 @@ function drawRect(context, entity, offsetX, offsetY) {
   if (entity.fill === true) {
     shapeFill(context, entity.fillColour, entity.fillOrder);
   }
-}
-
-function drawScale(context, entity, offsetX, offsetY) {
-  context.drawImage(
-    swatches.scaleSwatches[entity.fillPalette].canvas,
-    entity.originX + offsetX,
-    entity.originY + offsetY
-  );
 }
 
 function drawScalePath(context, originX, originY) {
@@ -4418,236 +4294,236 @@ function setupToolboxButtons() {
 
   // Buttons
   // New
-  let nEnt = new UiButton();
+  let pEnt = new UiButton();
 
-  nEnt.name = "toolboxNew";
+  pEnt.name = "toolboxNew";
 
-  nEnt.icon = "iconNew";
-  nEnt.tiptext = "New Pattern";
+  pEnt.icon = "iconNew";
+  pEnt.tiptext = "New Pattern";
 
-  uiToolbox.addButton(nEnt);
+  uiToolbox.addButton(pEnt);
 
   // Cursor
-  nEnt = new UiButton();
+  pEnt = new UiButton();
 
-  nEnt.name = "toolboxCursor";
+  pEnt.name = "toolboxCursor";
 
-  nEnt.helptext = ["Cursor Tool", "Click a scale to change its colour."];
-  nEnt.icon = "iconCursor";
-  nEnt.pregap = true;
-  nEnt.tiptext = "Cursor Tool";
+  pEnt.helptext = ["Cursor Tool", "Click a scale to change its colour."];
+  pEnt.icon = "iconCursor";
+  pEnt.pregap = true;
+  pEnt.tiptext = "Cursor Tool";
 
-  uiToolbox.addButton(nEnt);
+  uiToolbox.addButton(pEnt);
 
   // Pan
-  nEnt = new UiButton();
+  pEnt = new UiButton();
 
-  nEnt.name = "cameraPan";
+  pEnt.name = "cameraPan";
 
-  nEnt.helptext = ["Pan Tool", "Click anywhere to pan."];
-  nEnt.icon = "iconPan";
-  nEnt.tiptext = "Pan Mode";
+  pEnt.helptext = ["Pan Tool", "Click anywhere to pan."];
+  pEnt.icon = "iconPan";
+  pEnt.tiptext = "Pan Mode";
 
-  uiToolbox.addButton(nEnt);
+  uiToolbox.addButton(pEnt);
 
   // Brush
-  nEnt = new UiButton();
+  pEnt = new UiButton();
 
-  nEnt.name = "toolboxBrush";
+  pEnt.name = "toolboxBrush";
 
-  nEnt.helptext = ["Brush Tool", "Click and hold to colour many scales."];
-  nEnt.icon = "iconBrush";
-  nEnt.tiptext = "Brush Tool";
+  pEnt.helptext = ["Brush Tool", "Click and hold to colour many scales."];
+  pEnt.icon = "iconBrush";
+  pEnt.tiptext = "Brush Tool";
 
-  uiToolbox.addButton(nEnt);
+  uiToolbox.addButton(pEnt);
 
   // Fill
-  nEnt = new UiButton();
+  pEnt = new UiButton();
 
-  nEnt.name = "toolboxFill";
-  nEnt.group = "fill";
+  pEnt.name = "toolboxFill";
+  pEnt.group = "fill";
 
   // Fill Row
-  nEnt = new UiButton();
+  let cEnt = new UiButton();
 
-  nEnt.name = "toolboxFillRow";
-  nEnt.group = "fill";
+  cEnt.name = "toolboxFillRow";
+  cEnt.group = "fill";
 
-  nEnt.helptext = ["Fill Row", "Click to colour an entire row."];
-  nEnt.icon = "iconFillRow";
-  nEnt.tiptext = "Fill Row";
+  cEnt.helptext = ["Fill Row", "Click to colour an entire row."];
+  cEnt.icon = "iconFillRow";
+  cEnt.tiptext = "Fill Row";
 
-  nEnt.addButton(nEnt);
+  pEnt.addButton(cEnt);
 
   // Fill Column
-  nEnt = new UiButton();
+  cEnt = new UiButton();
 
-  nEnt.name = "toolboxFillColumn";
-  nEnt.group = "fill";
+  cEnt.name = "toolboxFillColumn";
+  cEnt.group = "fill";
 
-  nEnt.helptext = ["Fill Column", "Click to colour an entire column."];
-  nEnt.icon = "iconFillColumn";
-  nEnt.tiptext = "Fill Column";
+  cEnt.helptext = ["Fill Column", "Click to colour an entire column."];
+  cEnt.icon = "iconFillColumn";
+  cEnt.tiptext = "Fill Column";
 
-  nEnt.addButton(nEnt);
+  pEnt.addButton(cEnt);
 
   // Fill Colour
-  nEnt = new UiButton();
+  cEnt = new UiButton();
 
-  nEnt.name = "toolboxFillColour";
-  nEnt.group = "fill";
+  cEnt.name = "toolboxFillColour";
+  cEnt.group = "fill";
 
-  nEnt.helptext = [
+  cEnt.helptext = [
     "Fill Area",
     "Click to change all adjacent scales of the same colour.",
   ];
-  nEnt.icon = "iconFillColour";
-  nEnt.tiptext = "Fill Colour";
+  cEnt.icon = "iconFillColour";
+  cEnt.tiptext = "Fill Colour";
 
-  nEnt.addButton(nEnt);
+  pEnt.addButton(cEnt);
 
-  nEnt.expandable = true;
+  pEnt.expandable = true;
 
-  uiToolbox.addButton(nEnt);
+  uiToolbox.addButton(pEnt);
 
   // Row
-  nEnt = new UiButton();
+  pEnt = new UiButton();
 
-  nEnt.name = "toolboxRow";
-  nEnt.group = "row";
+  pEnt.name = "toolboxRow";
+  pEnt.group = "row";
 
   // Insert Row
-  nEnt = new UiButton();
+  cEnt = new UiButton();
 
-  nEnt.name = "toolboxRowInsert";
-  nEnt.group = "row";
+  cEnt.name = "toolboxRowInsert";
+  cEnt.group = "row";
 
-  nEnt.helptext = ["Insert Row", "Click to add a new row of scales."];
-  nEnt.icon = "iconRowInsert";
-  nEnt.tiptext = "Insert Row";
+  cEnt.helptext = ["Insert Row", "Click to add a new row of scales."];
+  cEnt.icon = "iconRowInsert";
+  cEnt.tiptext = "Insert Row";
 
-  nEnt.addButton(nEnt);
+  pEnt.addButton(cEnt);
 
   // Remove Row
-  nEnt = new UiButton();
+  cEnt = new UiButton();
 
-  nEnt.name = "toolboxRowRemove";
-  nEnt.group = "row";
+  cEnt.name = "toolboxRowRemove";
+  cEnt.group = "row";
 
-  nEnt.helptext = ["Remove Row", "Click to remove a row of scales."];
-  nEnt.icon = "iconRowRemove";
-  nEnt.tiptext = "Delete Row";
+  cEnt.helptext = ["Remove Row", "Click to remove a row of scales."];
+  cEnt.icon = "iconRowRemove";
+  cEnt.tiptext = "Delete Row";
 
-  nEnt.addButton(nEnt);
+  pEnt.addButton(cEnt);
 
   // Copy Row
-  nEnt = new UiButton();
+  cEnt = new UiButton();
 
-  nEnt.name = "toolboxRowCopy";
-  nEnt.group = "row";
+  cEnt.name = "toolboxRowCopy";
+  cEnt.group = "row";
 
-  nEnt.helptext = ["Copy Row", "Click to copy the colours of a row of scales."];
-  nEnt.icon = "iconRowCopy";
-  nEnt.tiptext = "Copy Row";
+  cEnt.helptext = ["Copy Row", "Click to copy the colours of a row of scales."];
+  cEnt.icon = "iconRowCopy";
+  cEnt.tiptext = "Copy Row";
 
-  nEnt.addButton(nEnt);
+  pEnt.addButton(cEnt);
 
   // Paste Row
-  nEnt = new UiButton();
+  cEnt = new UiButton();
 
-  nEnt.name = "toolboxRowPaste";
-  nEnt.group = "row";
+  cEnt.name = "toolboxRowPaste";
+  cEnt.group = "row";
 
-  nEnt.helptext = [
+  cEnt.helptext = [
     "Paste Row",
     "Click to paste the copied colours of a row of scales.",
   ];
-  nEnt.icon = "iconRowPaste";
-  nEnt.tiptext = "Paste Row";
+  cEnt.icon = "iconRowPaste";
+  cEnt.tiptext = "Paste Row";
 
-  nEnt.addButton(nEnt);
+  pEnt.addButton(cEnt);
 
-  nEnt.expandable = true;
+  pEnt.expandable = true;
 
-  uiToolbox.addButton(nEnt);
+  uiToolbox.addButton(pEnt);
 
   // Column
-  nEnt = new UiButton();
+  pEnt = new UiButton();
 
-  nEnt.name = "toolboxColumn";
-  nEnt.group = "column";
+  pEnt.name = "toolboxColumn";
+  pEnt.group = "column";
 
   // Insert Column
-  nEnt = new UiButton();
+  cEnt = new UiButton();
 
-  nEnt.name = "toolboxColumnInsert";
-  nEnt.group = "column";
+  cEnt.name = "toolboxColumnInsert";
+  cEnt.group = "column";
 
-  nEnt.helptext = ["Insert Column", "Click to insert a new column of scales."];
-  nEnt.icon = "iconColumnInsert";
-  nEnt.tiptext = "Insert Column";
+  cEnt.helptext = ["Insert Column", "Click to insert a new column of scales."];
+  cEnt.icon = "iconColumnInsert";
+  cEnt.tiptext = "Insert Column";
 
-  nEnt.addButton(nEnt);
+  pEnt.addButton(cEnt);
 
   // Remove Column
-  nEnt = new UiButton();
+  cEnt = new UiButton();
 
-  nEnt.name = "toolboxColumnRemove";
-  nEnt.group = "column";
+  cEnt.name = "toolboxColumnRemove";
+  cEnt.group = "column";
 
-  nEnt.helptext = ["Remove Column", "Click to remove a column of scales."];
-  nEnt.icon = "iconColumnRemove";
-  nEnt.tiptext = "Delete Column";
+  cEnt.helptext = ["Remove Column", "Click to remove a column of scales."];
+  cEnt.icon = "iconColumnRemove";
+  cEnt.tiptext = "Delete Column";
 
-  nEnt.addButton(nEnt);
+  pEnt.addButton(cEnt);
 
   // Copy Column
-  nEnt = new UiButton();
+  cEnt = new UiButton();
 
-  nEnt.name = "toolboxColumnCopy";
-  nEnt.group = "column";
+  cEnt.name = "toolboxColumnCopy";
+  cEnt.group = "column";
 
-  nEnt.helptext = [
+  cEnt.helptext = [
     "Copy Column",
     "Click to copy the colours of a column of scales.",
   ];
-  nEnt.icon = "iconColumnCopy";
-  nEnt.tiptext = "Copy Column";
+  cEnt.icon = "iconColumnCopy";
+  cEnt.tiptext = "Copy Column";
 
-  nEnt.addButton(nEnt);
+  pEnt.addButton(cEnt);
 
   // Paste Column
-  nEnt = new UiButton();
+  cEnt = new UiButton();
 
-  nEnt.name = "toolboxColumnPaste";
-  nEnt.group = "column";
+  cEnt.name = "toolboxColumnPaste";
+  cEnt.group = "column";
 
-  nEnt.helptext = [
+  cEnt.helptext = [
     "Paste Column",
     "Click to paste the copied colours of a row of scales.",
   ];
-  nEnt.icon = "iconColumnPaste";
-  nEnt.tiptext = "Paste Column";
+  cEnt.icon = "iconColumnPaste";
+  cEnt.tiptext = "Paste Column";
 
-  nEnt.addButton(nEnt);
+  pEnt.addButton(cEnt);
 
-  nEnt.expandable = true;
+  pEnt.expandable = true;
 
-  uiToolbox.addButton(nEnt);
+  uiToolbox.addButton(pEnt);
 
   // Replace
-  nEnt = new UiButton();
+  pEnt = new UiButton();
 
-  nEnt.name = "toolboxReplace";
+  pEnt.name = "toolboxReplace";
 
-  nEnt.helptext = [
+  pEnt.helptext = [
     "Replace Colour",
     "Click to change all scales of a single colour.",
   ];
-  nEnt.icon = "iconReplace";
-  nEnt.tiptext = "Replace Colour";
+  pEnt.icon = "iconReplace";
+  pEnt.tiptext = "Replace Colour";
 
-  uiToolbox.addButton(nEnt);
+  uiToolbox.addButton(pEnt);
 }
 
 function createInterface() {

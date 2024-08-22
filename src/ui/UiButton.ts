@@ -74,5 +74,5 @@ export class UiButton {
     }
 
     return entities;
-  };
+  }
 }

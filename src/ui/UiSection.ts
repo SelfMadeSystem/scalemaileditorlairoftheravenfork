@@ -13,16 +13,10 @@ export class UiSection {
   }
 
   buildSection(target: any, currentTool: string) {
-    // Variables
-    var x = 0;
-    var y = this.buttons.length;
-    var z = 0;
-    var l = 0;
+    let sx = 0;
 
-    var sx = 0;
-
-    var ox = 0;
-    var oy = 0;
+    let ox = 0;
+    let oy = 0;
 
     // Configure Origin
     if (this.alignRight === true) {
@@ -38,7 +32,7 @@ export class UiSection {
     }
 
     // Create Entities
-    for (x = 0; x < y; x++) {
+    for (let x = 0; x < this.buttons.length; x++) {
       if (this.buttons[x].pregap === true) {
         sx += uiIconSize;
       }
@@ -55,9 +49,7 @@ export class UiSection {
         this.buttons[x].expandable === true &&
         this.buttons[x].expanded === true
       ) {
-        l = this.buttons[x].subbuttons.length;
-
-        for (z = 0; z < l; z++) {
+        for (let z = 0; z < this.buttons[x].subbuttons.length; z++) {
           if (this.buttons[x].subbuttons[z].name == currentTool) {
             this.buttons[x].selected = z;
             this.buttons[x].name = this.buttons[x].subbuttons[z].name;
