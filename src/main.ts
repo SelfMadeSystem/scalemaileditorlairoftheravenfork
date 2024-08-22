@@ -22,6 +22,7 @@ import { DrawUtils } from "./DrawUtils";
 import { EntityLayer } from "./EntityLayer";
 import { fontStyles } from "./Consts";
 import { uiIconSize, uiOffsetX, uiOffsetY } from "./ui";
+import { PatternMatrix } from "./PatternMatrix";
 
 // Variables ==========================================================================================================
 const imageLoader = new ImageLoader(startDesigner);
@@ -30,7 +31,7 @@ const imageLoader = new ImageLoader(startDesigner);
 var swatches = new TemplateSwatches();
 var drawEmpty = true;
 
-// Assets
+// Draw Utils
 const drawUtils = new DrawUtils(imageLoader, swatches);
 
 // Canvases
@@ -38,12 +39,14 @@ const backgroundCanvas = document.getElementById(
   "canvasBackground"
 ) as HTMLCanvasElement;
 const backgroundContext = backgroundCanvas.getContext("2d")!;
-var editorLayer = new EntityLayer("canvasEditor", drawUtils);
+
 const interactionLayer = document.getElementById(
   "canvasWrapper"
 ) as HTMLDivElement;
-var uiLayer = new EntityLayer("canvasUI", drawUtils);
-var photoLayer = new EntityLayer(
+
+const editorLayer = new EntityLayer("canvasEditor", drawUtils);
+const uiLayer = new EntityLayer("canvasUI", drawUtils);
+const photoLayer = new EntityLayer(
   {
     id: "photoLayer",
     width: 250,
@@ -117,449 +120,6 @@ var currentTool = "toolboxCursor";
 // Palette
 
 // Pattern
-function PatternMatrix() {
-  this.matrix = [];
-
-  this.height = 0;
-  this.width = 0;
-
-  this.physicalHeight = 0;
-  this.physicalWidth = 0;
-
-  // Matrix Functions
-  this.clearMatrix = function () {
-    this.matrix = [];
-    this.height = 0;
-    this.width = 0;
-  };
-
-  this.copyMatrix = function (target) {
-    this.matrix = target.matrix;
-    this.getSize();
-  };
-
-  this.loadMatrix = function (matrix) {
-    var x = 0;
-    var s = 0;
-    var y = matrix.length;
-    var z = matrix[0].length;
-
-    newPattern(this, z, y, false);
-
-    for (x = 0; x < y; x++) {
-      for (s = 0; s < z; s++) {
-        this.colourScale(x, s, matrix[x][s].colour);
-      }
-    }
-  };
-
-  this.getSize = function () {
-    // Store Matrix Size
-    this.height = this.matrix.length;
-    this.width = this.matrix[0].length;
-
-    // Calculate Physical Size
-    if (this.height > 0 && this.width > 0) {
-      // Find corners
-      var firstRow = this.findFirstColour("row", 1);
-      var lastRow = this.findFirstColour("row", 0);
-
-      var firstCol = this.findFirstColour("col", 1);
-      var lastCol = this.findFirstColour("col", 0);
-
-      // Determine Physical Size of Pattern
-      if (
-        firstRow[0] !== false &&
-        lastRow[0] !== false &&
-        firstCol[0] !== false &&
-        lastCol[0] !== false
-      ) {
-        // Calculate Physical Size
-        this.physicalHeight = lastRow[0] - firstRow[0];
-        this.physicalWidth = lastCol[1] - firstCol[1];
-
-        if (
-          this.matrix[firstCol[0]][0].colour == 0 ||
-          this.matrix[this.height - 1 - lastCol[0]][0].colour == 0
-        ) {
-          this.physicalWidth -= 0.5;
-        }
-
-        if (firstRow[0] === false && lastRow[0] === false) {
-          this.physicalHeight = 0;
-        } else {
-          this.physicalHeight += 1;
-        }
-
-        if (firstCol[1] === false && lastCol[1] === false) {
-          this.physicalWidth = 0;
-        } else {
-          this.physicalWidth += 1;
-        }
-      }
-    }
-  };
-
-  this.findFirstColour = function (mode, direction) {
-    if (direction === undefined) direction = 1;
-
-    var colX = 0;
-    var colY = 0;
-
-    var rowX = 0;
-    var rowY = 0;
-    var rowZ = 0;
-
-    switch (mode) {
-      case "col":
-        rowY = this.height;
-
-        if (direction == 1) {
-          colX = 0;
-          colY = this.width;
-
-          for (; colX < colY; colX++) {
-            if (this.matrix[0][0].colour == 0) {
-              rowX = 0;
-              rowZ = 1;
-            } else {
-              rowX = 1;
-              rowZ = 0;
-            }
-
-            for (; rowX < rowY; rowX += 2) {
-              if (this.matrix[rowX][colX].colour > 1) {
-                return [rowX, colX];
-              }
-            }
-
-            for (; rowZ < rowY; rowZ += 2) {
-              if (this.matrix[rowZ][colX].colour > 1) {
-                return [rowZ, colX];
-              }
-            }
-          }
-        } else {
-          colX = this.width - 1;
-          colY = 0;
-
-          for (; colX > colY; colX--) {
-            if (this.matrix[0][0].colour == 0) {
-              rowX = this.height - 2;
-              rowZ = this.height - 1;
-            } else {
-              rowX = this.height - 1;
-              rowZ = this.height - 2;
-            }
-
-            for (; rowX > 0; rowX -= 2) {
-              if (this.matrix[rowX][colX].colour > 1) {
-                return [rowX, colX];
-              }
-            }
-
-            for (; rowZ > 0; rowZ -= 2) {
-              if (this.matrix[rowZ][colX].colour > 1) {
-                return [rowZ, colX];
-              }
-            }
-          }
-        }
-
-        break;
-
-      case "row":
-        colY = this.width;
-
-        if (direction == 1) {
-          rowX = 0;
-          rowY = this.height;
-
-          for (; rowX < rowY; rowX++) {
-            for (colX = 0; colX < colY; colX++) {
-              if (this.matrix[rowX][colX].colour > 1) {
-                return [rowX, colX];
-              }
-            }
-          }
-        } else {
-          rowX = this.height - 1;
-          rowY = 0;
-
-          for (; rowX > rowY; rowX--) {
-            for (colX = this.width - 1; colX > 0; colX--) {
-              if (this.matrix[rowX][colX].colour > 1) {
-                return [rowX, colX];
-              }
-            }
-          }
-        }
-
-        break;
-    }
-
-    return [false, false];
-  };
-
-  // Scale Functions
-  this.addScale = function (row, column, colour) {
-    if (colour === undefined) colour = activeColour;
-
-    try {
-      this.matrix[row].splice(column, 0, new Scale(colour));
-    } catch (err) {
-      console.log("Add Scale - That matrix position doesn't exist!");
-    }
-  };
-
-  this.colourScale = function (y, x, colour, expand) {
-    if (expand === undefined) expand = false;
-
-    // Auto Expand Pattern
-    if (expand === true) {
-      var height = this.height;
-      var width = this.width;
-
-      if (colour > 1) {
-        if (y == 0) {
-          this.addRow(0);
-          this.width = width;
-          this.fillRow(0, 1);
-          this.getSize();
-
-          y += 1;
-        } else if (y == height - 1) {
-          this.addRow(height);
-          this.fillRow(height, 1);
-          this.getSize();
-        }
-
-        if (x == 0) {
-          this.addColumn(1, 0);
-
-          x += 1;
-        } else if (x == width - 1 && this.matrix[y][0].colour != 0) {
-          this.addColumn(1, width);
-        }
-      }
-    }
-
-    // Set Colour
-    this.matrix[y][x].setColour(colour);
-    this.getSize();
-    createInterface();
-    uiLayer.redrawCanvas();
-  };
-
-  this.getColour = function (y, x) {
-    return this.matrix[y][x].colour;
-  };
-
-  this.removeScale = function (row, column) {
-    try {
-      this.matrix[row].splice(column, 1);
-    } catch (err) {
-      console.log("Remove Scale - That matrix position doesn't exist!");
-    }
-  };
-
-  // Row Functions
-  this.addRow = function (position) {
-    if (position === undefined) position = -1;
-
-    this.matrix.splice(position, 0, []);
-  };
-
-  this.fillRow = function (row, colour) {
-    var x = 0;
-    var y = this.width;
-    var inset = false;
-
-    if (this.matrix[row].length === 0) {
-      // Create Scales
-      for (x = 0; x < y; x++) {
-        this.matrix[row].push(new Scale(colour));
-      }
-    } else {
-      for (x = 0; x < y; x++) {
-        this.matrix[row][x].colour = colour;
-      }
-    }
-
-    // Inset Scale
-    if (this.height > 0) {
-      if (row == 0) {
-        if (this.matrix[row + 1][0].colour != 0) {
-          inset = true;
-        }
-      } else {
-        if (this.matrix[row - 1][0].colour != 0) {
-          inset = true;
-        }
-      }
-    } else {
-      inset = true;
-    }
-
-    if (inset === true) {
-      this.matrix[row][0].colour = 0;
-    }
-  };
-
-  this.removeRow = function (position) {
-    try {
-      this.matrix.splice(position, 1);
-      this.getSize();
-    } catch (err) {
-      console.log("Remove Row - That matrix position doesn't exist!");
-    }
-  };
-
-  // Column Functions
-  this.addColumn = function (colour, position) {
-    if (colour === undefined) colour = activeColour;
-    if (position === undefined) position = -1;
-
-    try {
-      var x = 0;
-      var y = this.matrix.length;
-
-      for (x = 0; x < y; x++) {
-        this.matrix[x].splice(position, 0, new Scale(colour));
-
-        if (position == 0 && this.matrix[x][1].colour == 0) {
-          this.matrix[x][0].colour = 0;
-          this.matrix[x][1].colour = 1;
-        }
-      }
-
-      this.getSize();
-    } catch (err) {
-      console.log("Add Column - That matrix position doesn't exist!");
-    }
-  };
-
-  this.fillColumn = function (column, row, colour) {
-    var inset = false;
-    if (this.height > 0) {
-      if (row == 0) {
-        if (this.matrix[row + 1][0].colour != 0) {
-          inset = true;
-        }
-      } else {
-        if (this.matrix[row - 1][0].colour != 0) {
-          inset = true;
-        }
-      }
-    } else {
-      inset = true;
-    }
-    var x = inset ? 0 : 1;
-    var y = this.matrix.length;
-
-    for (; x < y; x += 2) {
-      this.matrix[x][column].colour = colour;
-    }
-  };
-
-  this.removeColumn = function (position) {
-    try {
-      var y = this.matrix.length;
-
-      for (x = 0; x < y; x++) {
-        this.matrix[x].splice(position, 1);
-      }
-
-      this.getSize();
-    } catch (err) {
-      console.log("Remove Column - That matrix position doesn't exist!");
-    }
-  };
-
-  // Fill Functions
-
-  this.validPosition = function (y, x) {
-    return (
-      y >= 0 && y < this.matrix.length && x >= 0 && x < this.matrix[0].length
-    );
-  };
-
-  this.validPositionC = function (y, x, colour) {
-    if (this.validPosition(y, x)) {
-      return this.getColour(y, x) === colour;
-    }
-    return false;
-  };
-
-  this.fill = function (y, x, colour) {
-    let c = this.getColour(y, x);
-    if (c === colour) return;
-
-    this.matrix[y][x].colour = colour;
-
-    //offset X : y % 2 == (this.matrix.length % 2)
-    let inset = false;
-
-    // Inset Scale
-    if (this.height > 0) {
-      if (y == 0) {
-        if (this.matrix[y + 1][0].colour != 0) {
-          inset = true;
-        }
-      } else {
-        if (this.matrix[y - 1][0].colour != 0) {
-          inset = true;
-        }
-      }
-    } else {
-      inset = true;
-    }
-
-    for (let y1 = -1; y1 < 2; y1 += 2) {
-      for (let x1 = inset ? -1 : 0; x1 <= (inset ? 0 : 1); x1++) {
-        console.log("y " + (y % 2) + " x " + (this.matrix.length % 2));
-        if (this.validPositionC(y + y1, x + x1, c)) {
-          this.fill(y + y1, x + x1, colour);
-          // editorPattern.colourScale(y + y1, x + x1, colour, false);
-          // swatches.generatePatternSwatch(editorPattern);
-          // editorLayer.redrawCanvas();
-          // drawBg();
-        }
-      }
-    }
-  };
-
-  this.replaceAll = function (c1, c2) {
-    if (c1 === c2) return;
-    let maxY = this.matrix.length;
-    let maxX = this.matrix[0].length;
-    for (var y = 0; y < maxY; y++) {
-      for (var x = 0; x < maxX; x++) {
-        if (this.getColour(y, x) === c1) {
-          this.matrix[y][x].colour = c2;
-          // editorPattern.colourScale(y, x, c2, false);
-          // swatches.generatePatternSwatch(editorPattern);
-          // editorLayer.redrawCanvas();
-          // drawBg();
-        }
-      }
-    }
-  };
-}
-
-function Scale(colour) {
-  this.colour = colour;
-
-  this.setColour = function (colour) {
-    if (colour === undefined) colour = false;
-
-    if (colour === false) {
-      this.colour = activeColour;
-    } else {
-      this.colour = colour;
-    }
-  };
-}
 
 // Swatches
 function TemplateSwatches() {
@@ -1412,12 +972,12 @@ function scaleCanvases() {
   const width = window.innerWidth;
   backgroundCanvas.style.height = height + "px";
   backgroundCanvas.style.width = width + "px";
-  
+
   backgroundCanvas.height = height;
   backgroundCanvas.width = width;
-  
+
   drawBg();
-  
+
   editorLayer.scaleCanvas();
   editorLayer.redrawCanvas();
 
@@ -1495,7 +1055,7 @@ function drawBg() {
     backgroundContext,
     editorLayer,
     editorPattern,
-    editorLayer!
+    editorLayer
   );
 }
 
@@ -1877,11 +1437,7 @@ function mouseHoverEditor(y, x, b) {
           editorPattern.colourScale(y, x, activeColour, true);
           swatches.generatePatternSwatch(editorPattern);
           editorLayer.redrawCanvas();
-          drawUtils.drawBackgroundDots(
-            editorLayer,
-            editorPattern,
-            editorLayer!
-          );
+          drawBg();
         }
         break;
 
@@ -3506,6 +3062,8 @@ function startDesigner() {
   }
 
   swatches.patternSwatch.context.globalCompositeOperation = "source-over";
+
+  scaleCanvases();
 }
 
 // Toggle Settings ====================================================================================================
@@ -3943,7 +3501,7 @@ function createInterface() {
   createData(uiLayer, editorPattern);
 }
 
-function createPalette(target) {
+function createPalette(target: EntityLayer) {
   var x = 0;
   var y = palette.colours.length;
 
@@ -4158,5 +3716,4 @@ function inchesFraction(v) {
 
 setupElements();
 drawUtils.imageAssets.loadImages();
-scaleCanvases();
 addEvent(window, "resize", scaleCanvases);
