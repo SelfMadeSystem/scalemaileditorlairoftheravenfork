@@ -13,13 +13,14 @@ export default class Entity {
 
   public fill = false;
   public fillColour = "";
-  public fillOrder = "nonzero";
+  public fillOrder: CanvasFillRule = "nonzero";
   public fillPalette: PaletteColour | undefined;
 
   public stroke = false;
   public strokeColour = "";
   public strokeWeight = 0;
 
+  public imageCanvas: HTMLCanvasElement | undefined;
   public imagesrc = "";
   public imageClipX = 0;
   public imageClipY = 0;

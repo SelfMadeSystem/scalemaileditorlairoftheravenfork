@@ -12,71 +12,45 @@ import ImageLoader from "./ImageLoader";
 import Entity from "./Entity";
 import { ColourPalette, PaletteColour } from "./Palette";
 import { Swatch } from "./Swatch";
-import { ThemeSet } from "./Theme";
+import { themes } from "./Theme";
 import { overlayInterface, setOverlay } from "./overlay/OverlayInterface";
 import { OverlayScreen } from "./overlay/OverlayScreen";
 import { OverlayObject } from "./overlay/OverlayObject";
 import { UiButton } from "./ui/UiButton";
 import { UiSection } from "./ui/UiSection";
+import { DrawUtils } from "./DrawUtils";
+import { EntityLayer } from "./EntityLayer";
+import { fontStyles } from "./Consts";
+import { uiIconSize, uiOffsetX, uiOffsetY } from "./ui";
 
 // Variables ==========================================================================================================
+const imageLoader = new ImageLoader(startDesigner);
+
+// Swatch Variables
+var swatches = new TemplateSwatches();
+var drawEmpty = true;
+
 // Assets
-const imageAssets = new ImageLoader(startDesigner);
+const drawUtils = new DrawUtils(imageLoader, swatches);
 
 // Canvases
-var backgroundLayer = new EntityLayer();
-var editorLayer = new EntityLayer();
+const backgroundCanvas = document.getElementById(
+  "canvasBackground"
+) as HTMLCanvasElement;
+const backgroundContext = backgroundCanvas.getContext("2d")!;
+var editorLayer = new EntityLayer("canvasEditor", drawUtils);
 const interactionLayer = document.getElementById(
   "canvasWrapper"
 ) as HTMLDivElement;
-var uiLayer = new EntityLayer();
-var photoLayer = new EntityLayer();
-
-var canvasCenterX = 0;
-var canvasCenterY = 0;
-var updateInterval = 1000 / 60;
-
-// Font Styles
-const fontStyles = [
-  "bold 12px Montserrat",
-  "12px Montserrat",
-  "bold 18px Montserrat",
-  "18px Montserrat",
-];
-
-var patternShape = 0;
-
-// Gallery Variables
-var loadedID = 0;
-var loadedTitle = "";
-var loadedAuthor = "";
-var loadedPrivacy = true;
-var loadedSRC = "";
-
-var searchResults;
-var searchPage = 0;
-var pageLimit = 30;
-
-var browserHistory;
-
-var saveLayer = new EntityLayer();
-
-var allowedCharacters = new RegExp("^[a-z0-9 _-]+$");
-
-var restrictedWords = [
-  "lair of the raven",
-  "anthony edmonds",
-  "cunt",
-  "fag",
-  "fuck",
-  "nigga",
-  "nigger",
-  "piss",
-  "shit",
-  "whore",
-];
-
-var restrictedAuthors = ["raven", "lotr"];
+var uiLayer = new EntityLayer("canvasUI", drawUtils);
+var photoLayer = new EntityLayer(
+  {
+    id: "photoLayer",
+    width: 250,
+    height: 250,
+  },
+  drawUtils
+);
 
 // Interaction Variables
 var panOffsetX = 0;
@@ -84,7 +58,6 @@ var panOffsetY = 0;
 var panCenterX = 0;
 var panCenterY = 0;
 
-var panState = false;
 var panMouse = false;
 var panKey = false;
 
@@ -94,10 +67,6 @@ var splashText;
 // Palette Variables
 var palette = new ColourPalette();
 var activeColour = 2;
-
-var gradientSheen;
-var gradientShiny;
-var textureBrushed;
 
 // Pattern Variables
 var editorPattern = new PatternMatrix();
@@ -138,287 +107,13 @@ rulerData["imperial"] = {
   multiWeight: 0.035274,
 };
 
-// Scale Variables
-var scaleRadius = 75;
-var scaleInnerHoleOffset = 0;
-var scaleInnerHoleRadius = 0;
-
-var scaleOffsetX = 0;
-var scaleOffsetY = 0;
-var scaleOffsetR = 0;
-
-var scaleOffsetXDouble = 0;
-var scaleOffsetXHalf = 0;
-
-var scaleHeightPx = 0;
-var scaleHeightPxHalf = 0;
-var scaleHeightPxQuarter = 0;
-
-var scaleWidthPx = 0;
-var scaleWidthPxHalf = 0;
-
-var scaleSpacingX = 0;
-var scaleSpacingXHalf = 0;
-
-var scaleSpacingY = 0;
-
-var scaleRatioWide = 0.609022556;
-var scaleRatioHigh = 1.641975309;
-
-// Swatch Variables
-var swatches = new TemplateSwatches();
-var drawEmpty = true;
-
-// Theme Variables
-var themeLibrary = new ThemeSet();
-var theme = 0;
-
 // UI Variables
 var uiToolbox = new UiSection();
 var uiCamera = new UiSection();
 
-var uiOffsetX = 15;
-var uiOffsetY = 15;
-var uiIconSize = 30;
-
 var currentTool = "toolboxCursor";
 
 // Objects ============================================================================================================
-// Interface
-
-// Layer
-function EntityLayer() {
-  this.canvas;
-  this.context;
-  this.entities = [];
-  this.id;
-
-  this.lastDraw = 0;
-  this.redrawQueueTimer = false;
-
-  this.centerX = 0;
-  this.centerY = 0;
-  this.height = 0;
-  this.offsetX = 0;
-  this.offsetY = 0;
-  this.reverse = false;
-  this.width = 0;
-
-  this.tooltip = false;
-  this.tooltipFlip = false;
-  this.tooltipText = "";
-  this.tooltipX = 0;
-  this.tooltipY = 0;
-
-  this.expanded = false;
-
-  /* Canvas Functions */
-  this.setupCanvas = function () {
-    this.canvas = document.getElementById(this.id);
-    this.context = this.canvas.getContext("2d");
-
-    this.canvas.style.height = "100%";
-    this.canvas.style.width = "100%";
-
-    this.context.imageSmoothingEnabled = false;
-    this.context.font = fontStyles[1];
-
-    this.scaleCanvas();
-  };
-
-  this.setupMemory = function () {
-    this.canvas = document.createElement("canvas");
-    this.context = this.canvas.getContext("2d");
-
-    this.context.imageSmoothingEnabled = false;
-    this.context.font = fontStyles[1];
-
-    this.scaleCanvas(25, 25, false);
-
-    //document.body.appendChild(this.canvas);
-  };
-
-  this.scaleCanvas = function (height, width, minimum) {
-    if (height === undefined) height = window.innerHeight;
-    if (width === undefined) width = window.innerWidth;
-    if (minimum === undefined) minimum = true;
-
-    if (minimum === true) {
-      if (height < 600) {
-        height = 600;
-      }
-
-      if (width < 800) {
-        width = 800;
-      }
-    }
-
-    this.height = height;
-    this.width = width;
-
-    this.canvas.style.height = height + "px";
-    this.canvas.style.width = width + "px";
-
-    this.canvas.height = this.height;
-    this.canvas.width = this.width;
-
-    this.centerX = this.width / 2;
-    this.centerY = this.height / 2;
-  };
-
-  /* Entity Functions */
-  this.addEntity = function (...ent) {
-    this.entities.push(...ent);
-  };
-
-  this.clearEntities = function () {
-    this.entities = [];
-  };
-
-  this.removeEntity = function (id) {
-    var x = 0;
-    var y = this.entities.length;
-
-    for (x = 0; x < y; x++) {
-      if (this.entities[x].id == id) {
-        this.entities.splice(x, 1);
-      }
-    }
-  };
-
-  /* Layer Functions */
-  this.redrawCanvas = function () {
-    if (this.lastDraw + updateInterval < Date.now()) {
-      this.lastDraw = Date.now();
-
-      var x = 0;
-      var y = this.entities.length;
-      var z = 1;
-
-      // Set Write Direction
-      if (this.reverse === true) {
-        x = y - 1;
-        y = 0;
-        z = -1;
-      }
-
-      // Erase Canvas
-      this.context.clearRect(0, 0, this.width, this.height);
-
-      // Draw Entities
-      for (; x != y; x += z) {
-        switch (this.entities[x].shape) {
-          case "background":
-            drawBackgroundDots(this, editorPattern);
-            break;
-
-          case "canvas":
-            var oh = this.entities[x].imagesrc.height / 2;
-            var ow = this.entities[x].imagesrc.width / 2;
-
-            this.context.drawImage(
-              this.entities[x].imagesrc,
-              Math.round(this.centerX - ow + this.offsetX),
-              Math.round(this.centerY - oh + this.offsetY)
-            );
-            return;
-            break;
-
-          case "image":
-            drawImg(this.context, this.entities[x], this.offsetX, this.offsetY);
-            break;
-
-          case "palette":
-            drawPalette(
-              this.context,
-              this.entities[x],
-              this.offsetX,
-              this.offsetY
-            );
-            break;
-
-          case "rect":
-            drawRect(
-              this.context,
-              this.entities[x],
-              this.offsetX,
-              this.offsetY
-            );
-            break;
-
-          case "text":
-            drawText(
-              this.context,
-              this.entities[x].originX,
-              this.entities[x].originY,
-              this.entities[x].textAlign,
-              this.entities[x].textType,
-              this.entities[x].textString
-            );
-            break;
-        }
-      }
-
-      // Draw Tooltip
-      if (this.tooltip === true) {
-        drawTooltip(
-          this.context,
-          this.tooltipX,
-          this.tooltipY,
-          this.tooltipText,
-          this.tooltipFlip
-        );
-      }
-    } else {
-      var that = this;
-
-      if (this.redrawQueueTimer !== false) {
-        clearInterval(this.redrawQueueTimer);
-      }
-
-      this.redrawQueueTimer = setTimeout(function () {
-        that.redrawCanvas();
-        this.redrawQueueTimer = false;
-      }, updateInterval);
-    }
-  };
-
-  // Pan Functions
-  this.panCanvas = function (moveX, moveY) {
-    this.offsetX += moveX;
-    this.offsetY += moveY;
-
-    this.redrawCanvas();
-  };
-
-  this.panReset = function () {
-    this.offsetX = 0;
-    this.offsetY = 0;
-    this.panCanvas(0, 0);
-  };
-
-  // Tooltip Functions
-  this.setTooltip = function (x, y, tipText, flip) {
-    this.tooltip = true;
-
-    this.tooltipFlip = flip;
-    this.tooltipText = tipText;
-
-    this.tooltipX = x;
-    this.tooltipY = y;
-  };
-
-  this.clearTooltip = function () {
-    this.tooltip = false;
-
-    this.tooltipFlip = false;
-    this.tooltipText = "";
-
-    this.tooltipX = 0;
-    this.tooltipY = 0;
-  };
-}
-
 // Palette
 
 // Pattern
@@ -828,7 +523,7 @@ function PatternMatrix() {
           // editorPattern.colourScale(y + y1, x + x1, colour, false);
           // swatches.generatePatternSwatch(editorPattern);
           // editorLayer.redrawCanvas();
-          // backgroundLayer.redrawCanvas();
+          // drawBg();
         }
       }
     }
@@ -845,7 +540,7 @@ function PatternMatrix() {
           // editorPattern.colourScale(y, x, c2, false);
           // swatches.generatePatternSwatch(editorPattern);
           // editorLayer.redrawCanvas();
-          // backgroundLayer.redrawCanvas();
+          // drawBg();
         }
       }
     }
@@ -940,8 +635,10 @@ function TemplateSwatches() {
   this.generatePatternSwatch = function (pattern) {
     // Resize Canvas
     var height =
-      (pattern.height - 1) * scaleSpacingY + this.scaleSwatches[0].height;
-    var width = pattern.width * scaleSpacingX + scaleWidthPx;
+      (pattern.height - 1) * drawUtils.scaleSpacingY +
+      this.scaleSwatches[0].height;
+    var width =
+      pattern.width * drawUtils.scaleSpacingX + drawUtils.scaleWidthPx;
 
     this.scaleSwatch(this.patternSwatch, height, width);
 
@@ -966,7 +663,7 @@ function TemplateSwatches() {
         sHalf = 0;
       } else {
         // Even
-        sHalf = scaleSpacingXHalf;
+        sHalf = drawUtils.scaleSpacingXHalf;
       }
 
       // Add Scale Entity
@@ -974,8 +671,8 @@ function TemplateSwatches() {
         if (pattern.matrix[y][x].colour > limit) {
           this.patternSwatch.context.drawImage(
             this.scaleSwatches[pattern.matrix[y][x].colour].canvas,
-            Math.round(sHalf + scaleSpacingX * x),
-            Math.round(scaleSpacingY * y)
+            Math.round(sHalf + drawUtils.scaleSpacingX * x),
+            Math.round(drawUtils.scaleSpacingY * y)
           );
         }
       }
@@ -990,8 +687,8 @@ function TemplateSwatches() {
     for (x = 0; x < y; x++) {
       this.scaleSwatch(
         this.scaleSwatches[x],
-        scaleHeightPx + this.shadowY + this.shadowBlur / 2,
-        scaleWidthPx + this.shadowX + this.shadowBlur / 2
+        drawUtils.scaleHeightPx + this.shadowY + this.shadowBlur / 2,
+        drawUtils.scaleWidthPx + this.shadowX + this.shadowBlur / 2
       );
       this.generateScaleSwatch(
         this.scaleSwatches[x],
@@ -1020,7 +717,7 @@ function TemplateSwatches() {
     var z = 0;
 
     if (alpha <= 60) {
-      drawScalePath(swatch.context, 0, 0);
+      drawUtils.drawScalePath(swatch.context, 0, 0);
       swatch.context.fillStyle = hex;
       swatch.context.fill("evenodd");
     } else {
@@ -1030,10 +727,10 @@ function TemplateSwatches() {
       swatch.context.shadowOffsetX = this.shadowX;
       swatch.context.shadowOffsetY = this.shadowY;
 
-      drawScalePath(swatch.context, 0, 0);
+      drawUtils.drawScalePath(swatch.context, 0, 0);
       swatch.context.fillStyle = hex;
       swatch.context.fill("evenodd");
-      shapeShadowReset(swatch.context);
+      drawUtils.shapeShadowReset(swatch.context);
 
       swatch.context.shadowBlur = 0;
       swatch.context.shadowColor = this.shadowColour;
@@ -1051,7 +748,7 @@ function TemplateSwatches() {
         if (swatch.context.globalCompositeOperation !== "overlay") {
           console.log("Browser doesn't support the overlay blend mode.");
         } else {
-          drawScalePath(swatch.context, 0, 0);
+          drawUtils.drawScalePath(swatch.context, 0, 0);
           swatch.context.fillStyle = this.textureSwatches[v].pattern;
           swatch.context.fill("evenodd");
         }
@@ -1067,7 +764,7 @@ function TemplateSwatches() {
       if (swatch.context.globalCompositeOperation !== "overlay") {
         console.log("Browser doesn't support the overlay blend mode.");
       } else {
-        drawScalePath(swatch.context, 0, 0);
+        drawUtils.drawScalePath(swatch.context, 0, 0);
         swatch.context.fillStyle = this.gradientSwatches[z].gradient;
         swatch.context.fill("evenodd");
       }
@@ -1082,14 +779,18 @@ function TemplateSwatches() {
     var tex = [0.1, 0.225];
 
     for (x = 0; x < y; x++) {
-      this.scaleSwatch(this.textureSwatches[x], scaleHeightPx, scaleHeightPx);
+      this.scaleSwatch(
+        this.textureSwatches[x],
+        drawUtils.scaleHeightPx,
+        drawUtils.scaleHeightPx
+      );
       this.generateTextureSwatch(this.textureSwatches[x], tex[x]);
     }
   };
 
   this.generateTextureSwatch = function (swatch: Swatch, alphaMod: number) {
     swatch.context.globalAlpha = alphaMod;
-    const img = imageAssets.getImage("textureBrushed");
+    const img = drawUtils.imageAssets.getImage("textureBrushed");
     if (img) {
       swatch.context.drawImage(img, 0, 0);
     } else {
@@ -1109,7 +810,11 @@ function TemplateSwatches() {
     var gra = [0, 30];
 
     for (x = 0; x < y; x++) {
-      this.scaleSwatch(this.gradientSwatches[x], scaleHeightPx, scaleWidthPx);
+      this.scaleSwatch(
+        this.gradientSwatches[x],
+        drawUtils.scaleHeightPx,
+        drawUtils.scaleWidthPx
+      );
       this.generateGradientSwatch(this.gradientSwatches[x], gra[x]);
     }
   };
@@ -1237,13 +942,13 @@ function distanceFromScale(
   offsetX: number,
   offsetY: number
 ) {
-  var scaleCenterX = toX + offsetX + scaleWidthPxHalf;
-  var scaleCenterY = toY + offsetY + scaleHeightPxHalf;
+  var scaleCenterX = toX + offsetX + drawUtils.scaleWidthPxHalf;
+  var scaleCenterY = toY + offsetY + drawUtils.scaleHeightPxHalf;
 
   var dx = fromX - scaleCenterX;
   var dy = fromY - scaleCenterY;
 
-  var ry = scaleRadius - scaleOffsetR * 2;
+  var ry = drawUtils.scaleRadius - drawUtils.scaleOffsetR * 2;
 
   var dist = Math.abs(Math.sqrt(dx * dx * 2.25 + dy * dy));
 
@@ -1262,78 +967,6 @@ function setURL(id?: string, title?: string) {
   //window.history.pushState(browserHistory, title, id);
 }
 
-// Background Functions ===============================================================================================
-function drawBackgroundDots(canvas, pattern, colour) {
-  if (colour === undefined) colour = themeLibrary.themes[theme].dotColour;
-
-  // Variables
-  var context = canvas.context;
-
-  var h = editorLayer.entities[0].imagesrc.height / 2;
-  var w = editorLayer.entities[0].imagesrc.width / 2;
-  var m = 0;
-  var x = 0;
-  var y = 0;
-
-  var drawX = 0;
-  var drawY = 0;
-
-  var backgroundOriginX = 0;
-  var backgroundOriginY = 0;
-
-  var backgroundOffsetX = 0;
-  var backgroundOffsetY = 0;
-
-  var stepX = scaleSpacingX;
-  var stepY = scaleSpacingY * 2;
-
-  var dot = Math.floor(scaleRadius / 30);
-
-  if (dot < 1) {
-    dot = 1;
-  }
-
-  // Calculate Bottom Left Scale
-  if (pattern.matrix[pattern.matrix.length - 1][0].colour == 0) {
-    m = scaleSpacingXHalf;
-  }
-
-  backgroundOriginX = canvas.centerX - w - dot + scaleSpacingX + m;
-  backgroundOriginY = canvas.centerY + h - dot * 1.5;
-
-  // Calculate Pan Offset
-  backgroundOriginX += canvas.offsetX;
-  backgroundOriginY += canvas.offsetY;
-
-  // Step Back to Edge
-  for (x = 0; backgroundOriginX > 0; x++) {
-    backgroundOriginX -= stepX;
-  }
-
-  for (y = 0; backgroundOriginY > 0; y++) {
-    backgroundOriginY -= stepY;
-  }
-
-  // Draw Dots
-  context.beginPath();
-  for (y = 0; (y - 1) * stepY < canvas.height; y++) {
-    for (x = 0; (x - 1) * stepX < canvas.width; x++) {
-      drawX = Math.round(backgroundOriginX + stepX * x);
-      drawY = Math.round(backgroundOriginY + stepY * y);
-      context.rect(drawX, drawY, dot, dot);
-
-      drawX += Math.round(scaleSpacingXHalf);
-      drawY -= Math.round(scaleSpacingY);
-      context.rect(drawX, drawY, dot, dot);
-    }
-  }
-
-  context.closePath();
-
-  context.fillStyle = colour;
-  context.fill("nonzero");
-}
-
 // Camera Functions ===================================================================================================
 function takePhoto() {
   // Variables
@@ -1341,7 +974,6 @@ function takePhoto() {
   var context = photoLayer.context;
 
   var photo;
-  var a;
 
   var tt = "Created using Lair of the Raven's Scalemail Inlay Designer";
   var it = "";
@@ -1360,17 +992,12 @@ function takePhoto() {
   photoLayer.scaleCanvas(ch + 100, cw + 50, false);
 
   // Fill Layer
-  context.fillStyle = themeLibrary.themes[theme].backgroundColour;
+  context.fillStyle = themes[drawUtils.theme].backgroundColour;
   context.fillRect(0, 0, photoLayer.width, photoLayer.height);
 
   // Create Image
   // Draw Pattern
   context.drawImage(swatches.patternSwatch.canvas, 25, 25);
-
-  if (loadedTitle.length > 0) {
-    tt = loadedTitle + " by " + loadedAuthor;
-    it = "?id=" + loadedID;
-  }
 
   context.fillStyle = "rgba(255, 255, 255, 0.5)";
 
@@ -1390,13 +1017,9 @@ function takePhoto() {
   photo = canvas.toDataURL("image/png");
 
   // Download
-  a = document.getElementById("photoAnchor");
+  const a = document.getElementById("photoAnchor") as HTMLAnchorElement;
 
-  if (loadedTitle.length < 1) {
-    a.download = "mypattern.png";
-  } else {
-    a.download = loadedTitle + ".png";
-  }
+  a.download = "mypattern.png";
 
   console.log(photo);
 
@@ -1656,7 +1279,7 @@ function itpPreviewPattern() {
   itpPatternWidth = document.getElementById("o-Width").value;
 
   var sampleWidth = imageWidth / itpPatternWidth;
-  var sampleHeight = Math.round(sampleWidth * scaleRatioHigh);
+  var sampleHeight = Math.round(sampleWidth * drawUtils.scaleRatioHigh);
 
   // Calculate Pattern Offset
   var sampleRadius = sampleWidth / 2;
@@ -1785,9 +1408,16 @@ function checkRadio(radios) {
 // Interaction Functions ==============================================================================================
 // Window Resize
 function scaleCanvases() {
-  backgroundLayer.scaleCanvas();
-  backgroundLayer.redrawCanvas();
-
+  const height = window.innerHeight;
+  const width = window.innerWidth;
+  backgroundCanvas.style.height = height + "px";
+  backgroundCanvas.style.width = width + "px";
+  
+  backgroundCanvas.height = height;
+  backgroundCanvas.width = width;
+  
+  drawBg();
+  
   editorLayer.scaleCanvas();
   editorLayer.redrawCanvas();
 
@@ -1800,20 +1430,20 @@ function scaleCanvases() {
 function zoomCanvas(inOut) {
   if (inOut > 0) {
     // Zoom Out
-    if (scaleRadius > 15) {
-      scaleRadius -= 5;
+    if (drawUtils.scaleRadius > 15) {
+      drawUtils.scaleRadius -= 5;
     }
   } else {
     // Zoom In
-    if (scaleRadius < 150) {
-      scaleRadius += 5;
+    if (drawUtils.scaleRadius < 150) {
+      drawUtils.scaleRadius += 5;
     }
   }
 
-  updateScaleVariables(scaleRadius);
+  updateScaleVariables(drawUtils.scaleRadius);
   swatches.regenerateSwatches();
 
-  backgroundLayer.redrawCanvas();
+  drawBg();
   editorLayer.redrawCanvas();
 }
 
@@ -1834,19 +1464,19 @@ function zoomExtents(sourcePattern, targetCanvas) {
     target = targetCanvas;
   }
 
-  extWidth = target.width / (sourcePattern.width * scaleSpacingX);
+  extWidth = target.width / (sourcePattern.width * drawUtils.scaleSpacingX);
   extHeight =
     target.height /
-    ((sourcePattern.height - 1) * scaleSpacingY + scaleHeightPx * 1.1);
+    ((sourcePattern.height - 1) * drawUtils.scaleSpacingY +
+      drawUtils.scaleHeightPx * 1.1);
 
   if (extWidth < extHeight) {
-    scaleRadius *= extWidth;
+    drawUtils.scaleRadius *= extWidth;
   } else {
-    scaleRadius *= extHeight;
+    drawUtils.scaleRadius *= extHeight;
   }
 
   if (targetCanvas === false) {
-    backgroundLayer.panReset();
     editorLayer.panReset();
 
     zoomCanvas(1);
@@ -1856,8 +1486,17 @@ function zoomExtents(sourcePattern, targetCanvas) {
 }
 
 function zoomReset() {
-  scaleRadius = 75;
+  drawUtils.scaleRadius = 75;
   zoomCanvas(0);
+}
+
+function drawBg() {
+  drawUtils.drawBackgroundDots(
+    backgroundContext,
+    editorLayer,
+    editorPattern,
+    editorLayer!
+  );
 }
 
 // Mouse Functions ====================================================================================================
@@ -1966,12 +1605,12 @@ function mouseHandler(event) {
       var patternWidth = editorPattern.width;
       var patternX = Math.round(
         editorLayer.centerX -
-          editorLayer.entities[0].imagesrc.width / 2 +
+          editorLayer.entities[0].imageCanvas!.width / 2 +
           editorLayer.offsetX
       );
       var patternY = Math.round(
         editorLayer.centerY -
-          editorLayer.entities[0].imagesrc.height / 2 +
+          editorLayer.entities[0].imageCanvas!.height / 2 +
           editorLayer.offsetY
       );
 
@@ -1979,10 +1618,10 @@ function mouseHandler(event) {
       var scaleY = 0;
       var sHalf = 0;
 
-      var windowEdgeL = 0 - scaleWidthPx;
-      var windowEdgeR = window.innerWidth + scaleWidthPx;
-      var windowEdgeT = 0 - scaleHeightPx;
-      var windowEdgeB = window.innerWidth + scaleHeightPx;
+      var windowEdgeL = 0 - drawUtils.scaleWidthPx;
+      var windowEdgeR = window.innerWidth + drawUtils.scaleWidthPx;
+      var windowEdgeT = 0 - drawUtils.scaleHeightPx;
+      var windowEdgeB = window.innerWidth + drawUtils.scaleHeightPx;
 
       for (y = 0; y < patternHeight; y++) {
         for (x = 0; x < patternWidth; x++) {
@@ -1993,15 +1632,15 @@ function mouseHandler(event) {
               sHalf = 0;
             } else {
               // Even
-              sHalf = scaleSpacingXHalf;
+              sHalf = drawUtils.scaleSpacingXHalf;
             }
 
             // Test
-            scaleX = Math.round(sHalf + scaleSpacingX * x);
-            scaleY = Math.round(scaleSpacingY * y);
+            scaleX = Math.round(sHalf + drawUtils.scaleSpacingX * x);
+            scaleY = Math.round(drawUtils.scaleSpacingY * y);
 
             //editorLayer.context.globalAlpha = 0.1;
-            //editorLayer.context.fillRect(patternX + scaleX, patternY + scaleY, scaleWidthPx, scaleHeightPx);
+            //editorLayer.context.fillRect(patternX + scaleX, patternY + scaleY, drawUtils.scaleWidthPx, drawUtils.scaleHeightPx);
 
             if (
               scaleX > windowEdgeL &&
@@ -2059,14 +1698,11 @@ function mouseHandler(event) {
 
     case "mousemove":
       if (panMouse === true) {
-        backgroundLayer.panCanvas(
-          event.pageX - panCenterX,
-          event.pageY - panCenterY
-        );
         editorLayer.panCanvas(
           event.pageX - panCenterX,
           event.pageY - panCenterY
         );
+        drawBg();
 
         panCenterX = event.pageX;
         panCenterY = event.pageY;
@@ -2178,7 +1814,7 @@ function mouseDownEditor(y, x, b) {
         editorPattern.colourScale(y, x, activeColour, true);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        backgroundLayer.redrawCanvas();
+        drawBg();
         break;
 
       //case "toolboxColumnInsert":
@@ -2189,20 +1825,20 @@ function mouseDownEditor(y, x, b) {
         editorPattern.fillRow(y, activeColour);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        backgroundLayer.redrawCanvas();
+        drawBg();
         break;
       case "toolboxFillColumn":
         editorPattern.fillColumn(x, y, activeColour);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        backgroundLayer.redrawCanvas();
+        drawBg();
         break;
       case "toolboxFillColour":
         editorPattern.fill(y, x, activeColour);
         editorPattern.colourScale(y, x, activeColour, false);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        backgroundLayer.redrawCanvas();
+        drawBg();
         break;
       //case "toolboxRowInsert":
       //case "toolboxRowRemove":
@@ -2212,11 +1848,11 @@ function mouseDownEditor(y, x, b) {
         editorPattern.replaceAll(editorPattern.getColour(y, x), activeColour);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        backgroundLayer.redrawCanvas();
+        drawBg();
         break;
 
       default:
-        backgroundLayer.redrawCanvas();
+        drawBg();
         console.log(
           "Sorry, the " + currentTool + " hasn't been implemented yet."
         );
@@ -2241,7 +1877,11 @@ function mouseHoverEditor(y, x, b) {
           editorPattern.colourScale(y, x, activeColour, true);
           swatches.generatePatternSwatch(editorPattern);
           editorLayer.redrawCanvas();
-          backgroundLayer.redrawCanvas();
+          drawUtils.drawBackgroundDots(
+            editorLayer,
+            editorPattern,
+            editorLayer!
+          );
         }
         break;
 
@@ -2290,7 +1930,6 @@ function mouseClickUI(id) {
   switch (id) {
     // Camera Controls
     case "cameraCenter":
-      backgroundLayer.panReset();
       editorLayer.panReset();
       break;
 
@@ -2303,7 +1942,6 @@ function mouseClickUI(id) {
       break;
 
     case "cameraReset":
-      backgroundLayer.panReset();
       editorLayer.panReset();
 
       zoomReset();
@@ -2361,7 +1999,7 @@ function mouseClickUI(id) {
           true;
       }
 
-      if (theme == 0) {
+      if (drawUtils.theme == 0) {
         (document.getElementById("toggleTheme") as HTMLInputElement).checked =
           true;
       }
@@ -2427,7 +2065,6 @@ function buildOverlays() {
     src: "buttonNew",
     click: () => {
       setOverlay("newShape");
-      patternShape = 0;
     },
   };
 
@@ -3653,7 +3290,7 @@ function newFromShape() {
   overlayInterface.hideOverlay();
   swatches.generatePatternSwatch(editorPattern);
   editorLayer.redrawCanvas();
-  backgroundLayer.redrawCanvas();
+  drawBg();
 }
 
 function patternShapeSquare(target, colour) {
@@ -3756,262 +3393,42 @@ function updateScaleVariables(radius) {
   if (radius === undefined) radius = 75;
 
   // Scale Base
-  scaleRadius = radius;
+  drawUtils.scaleRadius = radius;
 
-  scaleInnerHoleOffset = radius / 2;
-  scaleInnerHoleRadius = radius / 4;
+  drawUtils.scaleInnerHoleOffset = radius / 2;
+  drawUtils.scaleInnerHoleRadius = radius / 4;
 
   // Offsets
-  scaleOffsetX = scaleRadius / 25;
-  scaleOffsetY = 0.8879189152169245 * radius;
-  scaleOffsetR = scaleRadius - scaleOffsetY;
+  drawUtils.scaleOffsetX = drawUtils.scaleRadius / 25;
+  drawUtils.scaleOffsetY = 0.8879189152169245 * radius;
+  drawUtils.scaleOffsetR = drawUtils.scaleRadius - drawUtils.scaleOffsetY;
 
-  scaleOffsetXDouble = scaleOffsetX * 2;
-  scaleOffsetXHalf = scaleOffsetX / 2;
+  drawUtils.scaleOffsetXDouble = drawUtils.scaleOffsetX * 2;
+  drawUtils.scaleOffsetXHalf = drawUtils.scaleOffsetX / 2;
 
   // Height & Width in PX
-  scaleHeightPx = scaleOffsetY * 2;
-  scaleHeightPxHalf = scaleHeightPx / 2;
-  scaleHeightPxQuarter = scaleHeightPx / 4;
+  drawUtils.scaleHeightPx = drawUtils.scaleOffsetY * 2;
+  drawUtils.scaleHeightPxHalf = drawUtils.scaleHeightPx / 2;
+  drawUtils.scaleHeightPxQuarter = drawUtils.scaleHeightPx / 4;
 
-  scaleWidthPx = scaleRadius + scaleOffsetX * 2;
-  scaleWidthPxHalf = scaleWidthPx / 2;
+  drawUtils.scaleWidthPx = drawUtils.scaleRadius + drawUtils.scaleOffsetX * 2;
+  drawUtils.scaleWidthPxHalf = drawUtils.scaleWidthPx / 2;
 
   // Spacing in PX
-  scaleSpacingX = scaleWidthPx + scaleOffsetX;
-  scaleSpacingY =
-    scaleHeightPx - (scaleHeightPx - scaleRadius / 2 - scaleOffsetX);
+  drawUtils.scaleSpacingX = drawUtils.scaleWidthPx + drawUtils.scaleOffsetX;
+  drawUtils.scaleSpacingY =
+    drawUtils.scaleHeightPx -
+    (drawUtils.scaleHeightPx -
+      drawUtils.scaleRadius / 2 -
+      drawUtils.scaleOffsetX);
 
-  scaleSpacingXHalf = scaleSpacingX / 2;
+  drawUtils.scaleSpacingXHalf = drawUtils.scaleSpacingX / 2;
 }
 
 // Shape Functions ====================================================================================================
-function drawImg(
-  context: CanvasRenderingContext2D,
-  entity: Entity,
-  offsetX: number,
-  offsetY: number
-) {
-  context.beginPath();
-
-  if (entity.imageClipX !== false) {
-    context.drawImage(
-      imageAssets.getImage(entity.imagesrc)!,
-      entity.imageClipX,
-      entity.imageClipY,
-      entity.width,
-      entity.height,
-      entity.originX + offsetX,
-      entity.originY + offsetY,
-      entity.width,
-      entity.height
-    );
-  } else {
-    context.drawImage(
-      imageAssets.getImage(entity.imagesrc),
-      entity.originX + offsetX,
-      entity.originY + offsetY
-    );
-  }
-
-  context.closePath();
-}
-
-function drawPalette(
-  context: CanvasRenderingContext2D,
-  entity: Entity,
-  offsetX: number,
-  offsetY: number
-) {
-  // Colour
-  drawRect(context, entity, offsetX, offsetY);
-  context.fillStyle = entity.fillColour;
-  context.fill();
-
-  // Brush
-  if (entity.fillPalette?.brushed === true) {
-    drawRect(context, entity, offsetX, offsetY);
-    context.globalCompositeOperation = "overlay";
-    context.fillStyle = swatches.textureSwatches[1].pattern;
-    context.fill();
-    context.globalCompositeOperation = "source-over";
-  }
-}
-
-function drawRect(context, entity, offsetX, offsetY) {
-  context.beginPath();
-  context.rect(
-    entity.originX + offsetX,
-    entity.originY + offsetY,
-    entity.width,
-    entity.height
-  );
-  context.closePath();
-
-  if (entity.stroke === true) {
-    shapeStroke(context, entity.strokeColour, entity.strokeWeight);
-  }
-
-  if (entity.fill === true) {
-    shapeFill(context, entity.fillColour, entity.fillOrder);
-  }
-}
-
-function drawScalePath(context, originX, originY) {
-  originX += scaleOffsetXDouble;
-  originY += scaleOffsetY;
-
-  // Build Outer Scale
-  context.beginPath();
-  context.arc(originX, originY, scaleRadius, 5.19, 1.08);
-  context.arc(
-    originX + scaleRadius - scaleOffsetXDouble,
-    originY,
-    scaleRadius,
-    2.05,
-    4.23
-  );
-  context.closePath();
-
-  // Cutout Hole
-  context.arc(
-    originX + scaleInnerHoleOffset - scaleOffsetX,
-    originY - scaleInnerHoleOffset - scaleOffsetX,
-    scaleInnerHoleRadius - scaleOffsetXHalf,
-    0,
-    2 * Math.PI
-  );
-  context.closePath();
-}
-
-function drawText(context, x, y, align, type, string) {
-  var textWidth = 0;
-  var posX = x;
-
-  context.font = fontStyles[type];
-  context.fillStyle = themeLibrary.themes[theme].fontColour;
-
-  if (align == "right") {
-    textWidth = context.measureText(string).width;
-    posX -= textWidth;
-  }
-
-  context.beginPath();
-  context.fillText(string, posX, y);
-  context.closePath();
-}
-
-function drawTooltip(target, originX, originY, tipText, tipFlip) {
-  var textWidth = target.measureText(tipText).width;
-  var textHeight = 10;
-  var textPadding = 10;
-
-  var boxX = originX;
-  var boxY = originY - (textHeight + textPadding) / 2;
-  var triA = 0;
-  var triB = textHeight;
-
-  var shadow = 3;
-  var shadowOff = 3;
-
-  if (tipFlip === true) {
-    boxX = originX - uiIconSize - textPadding - textWidth - textHeight * 2;
-    triA = textWidth + textPadding + textHeight * 2;
-    triB = textWidth + textPadding + textHeight;
-
-    shadowOff = -3;
-  }
-
-  // Build Background
-  shapeShadow(target, shadowOff, shadow);
-
-  target.beginPath();
-  target.rect(
-    boxX + textHeight,
-    boxY,
-    textWidth + textPadding,
-    textHeight + textPadding
-  );
-
-  target.moveTo(boxX + triA, boxY + (textHeight + textPadding) / 2);
-  target.lineTo(boxX + triB, boxY);
-  target.lineTo(boxX + triB, boxY + (textHeight + textPadding));
-
-  shapeFill(target, "rgba(60, 114, 92, 0.75)");
-  target.closePath();
-
-  // Build Text
-  target.beginPath();
-  target.fillStyle = "#ffffff";
-  target.fillText(
-    tipText,
-    boxX + textHeight + textPadding / 4,
-    boxY + textPadding + 3
-  );
-  target.closePath();
-}
-
-function shapeShadow(
-  ctx: CanvasRenderingContext2D,
-  shadowBlur = 5,
-  offsetX = 0,
-  offsetY = 0,
-  colour = "rgba(0, 0, 0, 0.3)"
-) {
-  ctx.shadowBlur = shadowBlur;
-  ctx.shadowColor = colour;
-  ctx.shadowOffsetX = offsetX;
-  ctx.shadowOffsetY = offsetY;
-}
-
-function shapeShadowReset(target) {
-  target.shadowBlur = 0;
-  target.shadowColor = "rgba(0,0,0,0.3)";
-  target.shadowOffsetX = 0;
-  target.shadowOffsetY = 0;
-}
-
-function shapeStroke(target, colour, weight) {
-  if (weight === undefined) weight = 2;
-
-  target.strokeStyle = colour;
-  target.lineWidth = weight;
-  target.stroke();
-}
-
-function shapeFill(target, colour, order) {
-  if (order === undefined) order = "nonzero";
-
-  target.fillStyle = colour;
-  target.fill(order);
-
-  shapeShadowReset(target);
-}
 
 // Startup Functions ==================================================================================================
 function setupElements() {
-  // Background
-  backgroundLayer.id = "canvasBackground";
-  backgroundLayer.setupCanvas();
-
-  // Editor
-  editorLayer.id = "canvasEditor";
-  editorLayer.setupCanvas();
-
-  // UI
-  uiLayer.id = "canvasUI";
-  uiLayer.setupCanvas();
-
-  // Gallery
-  saveLayer.id = "saveLayer";
-  saveLayer.setupMemory();
-  saveLayer.scaleCanvas(250, 250, false);
-
-  // Photo
-  photoLayer.id = "photoLayer";
-  photoLayer.setupMemory();
-  photoLayer.scaleCanvas(250, 250, false);
-
   // Overlay
   splashText = document.getElementById("splashText");
 }
@@ -4038,7 +3455,7 @@ function startDesigner() {
   let nEnt = new Entity();
   nEnt.id = "memoryEditor";
   nEnt.shape = "canvas";
-  nEnt.imagesrc = swatches.patternSwatch.canvas;
+  nEnt.imageCanvas = swatches.patternSwatch.canvas;
   nEnt.originX = 0;
   nEnt.originY = 0;
   editorLayer.addEntity(nEnt);
@@ -4048,12 +3465,7 @@ function startDesigner() {
   // Background
   splashText.innerHTML = "Adding layers of complexity...";
 
-  nEnt = new Entity();
-  nEnt.id = "background";
-  nEnt.shape = "background";
-
-  backgroundLayer.addEntity(nEnt);
-  backgroundLayer.redrawCanvas();
+  drawBg();
 
   // UI
   setupInterface();
@@ -4120,45 +3532,41 @@ function toggleSize() {
 }
 
 function toggleTheme() {
-  if (theme == 0) {
-    theme = 1;
+  if (drawUtils.theme == 0) {
+    drawUtils.theme = 1;
   } else {
-    theme = 0;
+    drawUtils.theme = 0;
   }
 
-  changeCSS("*", "color", themeLibrary.themes[theme].fontColour);
+  changeCSS("*", "color", themes[drawUtils.theme].fontColour);
   changeCSS(
     ".borderBottom, h1",
     "border-color",
-    themeLibrary.themes[theme].fontColour
+    themes[drawUtils.theme].fontColour
   );
   changeCSS(
     ".borderTop, .overlayFooter",
     "border-color",
-    themeLibrary.themes[theme].fontColour
+    themes[drawUtils.theme].fontColour
   );
   changeCSS(
     ".backgroundTheme",
     "background-color",
-    themeLibrary.themes[theme].backgroundColour
+    themes[drawUtils.theme].backgroundColour
   );
-  changeCSS(
-    'input[type="file"]',
-    "color",
-    themeLibrary.themes[theme].fontColour
-  );
+  changeCSS('input[type="file"]', "color", themes[drawUtils.theme].fontColour);
   changeCSS(
     ".slider",
     "background-color",
-    themeLibrary.themes[theme].toggleColour
+    themes[drawUtils.theme].toggleColour
   );
   changeCSS(
     "#overlayWindow",
     "background-color",
-    themeLibrary.themes[theme].overlayColour
+    themes[drawUtils.theme].overlayColour
   );
 
-  backgroundLayer.redrawCanvas();
+  drawBg();
   createInterface();
   uiLayer.redrawCanvas();
 }
@@ -4543,7 +3951,7 @@ function createPalette(target) {
   var c = 0;
 
   var strokeWeight = 4;
-  var strokeColour = themeLibrary.themes[theme].paletteColour;
+  var strokeColour = themes[drawUtils.theme].paletteColour;
 
   var perRow = 4;
   var paletteIcon = uiIconSize / 1.5;
@@ -4557,7 +3965,7 @@ function createPalette(target) {
 
   for (x = 1; x < y; x++) {
     if (x == activeColour) {
-      strokeColour = themeLibrary.themes[theme].paletteColour;
+      strokeColour = themes[drawUtils.theme].paletteColour;
     } else {
       strokeColour = palette.colours[x].hex;
     }
@@ -4731,7 +4139,7 @@ function createData(target, pattern) {
     nEnt.shape = "text";
 
     nEnt.fill = true;
-    nEnt.fillColour = themeLibrary.themes[theme].fontColour;
+    nEnt.fillColour = themes[drawUtils.theme].fontColour;
 
     nEnt.originX = posX;
     nEnt.originY = posY;
@@ -4749,5 +4157,6 @@ function inchesFraction(v) {
 }
 
 setupElements();
-imageAssets.loadImages();
+drawUtils.imageAssets.loadImages();
+scaleCanvases();
 addEvent(window, "resize", scaleCanvases);
