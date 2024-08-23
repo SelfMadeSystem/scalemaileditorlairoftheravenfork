@@ -87,10 +87,6 @@ var uiCamera = new UiSection();
 var currentTool = "toolboxCursor";
 
 // General Functions ====================================================================================================
-function addEvent<T extends EventTarget>(object: T, type: string, method: any) {
-  object.addEventListener(type, method, false);
-}
-
 function calculateScale(
   destinationHeight: number,
   destinationWidth: number,
@@ -253,7 +249,7 @@ function itpSetCanvas() {
   itpContext = itpCanvas.getContext("2d")!;
 
   itpCanvasResize();
-  addEvent(window, "resize", itpCanvasResize);
+  window.addEventListener("resize", itpCanvasResize);
 
   itpContext.font = "20px Montserrat";
 }
@@ -2084,17 +2080,17 @@ function startDesigner() {
   // Event Triggers
   splashText.innerHTML = "Reticulating splines...";
 
-  addEvent(interactionLayer, "click", mouseHandler);
-  addEvent(interactionLayer, "mousemove", mouseHandler);
-  addEvent(interactionLayer, "mousedown", mouseHandler);
-  addEvent(interactionLayer, "mouseleave", mouseHandler);
-  addEvent(interactionLayer, "mouseup", mouseHandler);
-  addEvent(interactionLayer, "wheel", zoomCanvasMouse);
+  interactionLayer.addEventListener("click", mouseHandler);
+  interactionLayer.addEventListener("mousemove", mouseHandler);
+  interactionLayer.addEventListener("mousedown", mouseHandler);
+  interactionLayer.addEventListener("mouseleave", mouseHandler);
+  interactionLayer.addEventListener("mouseup", mouseHandler);
+  interactionLayer.addEventListener("wheel", zoomCanvasMouse);
 
-  addEvent(document, "keydown", keyHandler);
-  addEvent(document, "keyup", keyHandler);
+  document.addEventListener("keydown", keyHandler);
+  document.addEventListener("keyup", keyHandler);
 
-  addEvent(overlayInterface.background, "click", function () {
+  overlayInterface.background.addEventListener("click", function () {
     overlayInterface.hideOverlay();
   });
 
@@ -2776,4 +2772,4 @@ function inchesFraction(v: number) {
 }
 
 drawUtils.imageAssets.loadImages();
-addEvent(window, "resize", scaleCanvases);
+window.addEventListener("resize", scaleCanvases);
