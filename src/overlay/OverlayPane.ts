@@ -98,7 +98,7 @@ export function makeOverlayPane(
 
         for (let n = 0; n < object.data.length; n++) {
           const option = document.createElement("option");
-          option.value = n.toString(); // dunno why it's the number instead of the name
+          option.value = n.toString();
           option.textContent = object.data[n].name;
           select.append(option);
         }
@@ -324,6 +324,14 @@ export function makeOverlayPane(
 
       case "inputWrapper":
         // TODO: Definitely remove this
+        if (object.state === 1) {
+          const div = document.createElement("div");
+          div.classList.add("inputWrapper");
+          innerDiv.append(div);
+          innerDiv = div;
+        } else {
+          innerDiv = innerDiv.parentElement as HTMLDivElement;
+        }
         break;
 
       case "text": {

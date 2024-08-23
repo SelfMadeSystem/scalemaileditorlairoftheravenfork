@@ -90,10 +90,7 @@ export class TemplateSwatches {
 
   /* Scale Functions */
   generateScaleSwatches() {
-    var x = 0;
-    var y = this.palette.colours.length;
-
-    for (x = 0; x < y; x++) {
+    for (let x = 0; x < this.palette.colours.length; x++) {
       this.scaleSwatch(
         this.scaleSwatches[x],
         this.drawUtils.scaleHeightPx + this.shadowY + this.shadowBlur / 2,
@@ -101,7 +98,7 @@ export class TemplateSwatches {
       );
       this.generateScaleSwatch(
         this.scaleSwatches[x],
-        this.palette.colours[x].hex,
+        this.palette.colours[x].color,
         this.palette.colours[x].a,
         this.palette.colours[x].brushed,
         this.palette.colours[x].shiny,

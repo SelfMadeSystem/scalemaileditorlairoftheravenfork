@@ -124,7 +124,7 @@ export type OverlayObject =
       id: string;
 
       change: (e: Event) => void;
-      data: { id: string; name: string }[];
+      data: { name: string }[];
       label: string;
     }
   | {

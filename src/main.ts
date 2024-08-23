@@ -624,17 +624,12 @@ function mouseHandler(event: MouseEvent) {
   var mouseX = event.pageX;
   var mouseY = event.pageY;
 
-  var x = 0;
-  var y = 0;
-
   var uiRedraw = false;
   var uiChange = false;
 
   if (panMouse === false && panKey === false) {
     // Check UI Elements
-    y = uiLayer.entities.length;
-
-    for (x = y - 1; x > -1; x--) {
+    for (let x = uiLayer.entities.length - 1; x > -1; x--) {
       if (mouseInteraction(event, uiLayer.entities[x]) === true) {
         switch (event.type) {
           case "mousedown":
@@ -642,8 +637,6 @@ function mouseHandler(event: MouseEvent) {
             break;
 
           case "mousemove":
-            //console.log(uiLayer.entities[x].id + " Resolved hover.");
-
             setCursor("Pointer");
             // Tooltip
             // TODO: Refactor; this is messy
@@ -744,8 +737,8 @@ function mouseHandler(event: MouseEvent) {
       var windowEdgeT = 0 - drawUtils.scaleHeightPx;
       var windowEdgeB = window.innerWidth + drawUtils.scaleHeightPx;
 
-      for (y = 0; y < patternHeight; y++) {
-        for (x = 0; x < patternWidth; x++) {
+      for (let y = 0; y < patternHeight; y++) {
+        for (let x = 0; x < patternWidth; x++) {
           if (editorPattern.matrix[y][x].colour > 0) {
             // Even-Odd Spacing
             if (editorPattern.matrix[y][0].colour == 0) {
@@ -1024,14 +1017,9 @@ function mouseHoverEditor(y: number, x: number, b: number) {
 }
 
 function mouseClickUI(id: string) {
-  var x = 0;
-  var y = palette.colours.length;
-
-  for (x = 1; x < y; x++) {
-    if (id == palette.colours[x].id) {
-      setActiveColour(x);
-      return true;
-    }
+  if (id.startsWith("palette")) {
+    setActiveColour(parseInt(id.replace("palette", "")));
+    return;
   }
 
   switch (id) {
@@ -2555,11 +2543,11 @@ function createPalette(target: EntityLayer) {
     if (x == activeColour) {
       strokeColour = themes[drawUtils.theme].paletteColour;
     } else {
-      strokeColour = palette.colours[x].hex;
+      strokeColour = palette.colours[x].color;
     }
 
     const nEnt = new Entity();
-    nEnt.id = palette.colours[x].id;
+    nEnt.id = "palette" + x;
     nEnt.shape = "palette";
 
     nEnt.mouse = true;
@@ -2567,7 +2555,7 @@ function createPalette(target: EntityLayer) {
     nEnt.mouseHover = true;
 
     nEnt.fill = true;
-    nEnt.fillColour = palette.colours[x].hex;
+    nEnt.fillColour = palette.colours[x].color;
     nEnt.fillPalette = palette.colours[x];
 
     nEnt.stroke = true;
