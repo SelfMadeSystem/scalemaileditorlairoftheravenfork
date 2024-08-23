@@ -9,10 +9,10 @@ export class Swatch {
   public shiny = false;
   public type = "";
   public width = 0;
-
-  constructor(
-    public id: string,
-    public canvas: HTMLCanvasElement,
-    public context: CanvasRenderingContext2D
-  ) {}
+  public canvas: HTMLCanvasElement;
+  public context: CanvasRenderingContext2D;
+  constructor() {
+    this.canvas = document.createElement("canvas");
+    this.context = this.canvas.getContext("2d")!;
+  }
 }

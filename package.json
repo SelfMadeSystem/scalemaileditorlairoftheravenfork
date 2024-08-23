@@ -17,6 +17,7 @@
     "@babel/parser": "^7.25.3",
     "@babel/traverse": "^7.25.3",
     "@babel/types": "^7.25.2",
+    "lit": "^3.2.0",
     "recast": "^0.23.9"
   }
 }

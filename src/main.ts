@@ -61,8 +61,6 @@ const photoLayer = new EntityLayer(
 );
 
 // Interaction Variables
-var panOffsetX = 0;
-var panOffsetY = 0;
 var panCenterX = 0;
 var panCenterY = 0;
 
@@ -78,7 +76,6 @@ const editorPattern = new PatternMatrix();
 // Ruler Variables
 var rulerUnits: keyof typeof rulerUnitData = "metric";
 var rulerSize: keyof typeof rulerSizeData = "large";
-var sCount = 0;
 
 // UI Variables
 var uiToolbox = new UiSection();
@@ -849,8 +846,8 @@ function mouseHandler(event: MouseEvent) {
 }
 
 function keyHandler(event: KeyboardEvent) {
-  switch (event.which) {
-    case 32:
+  switch (event.key) {
+    case "Shift":
       if (event.type == "keydown") {
         if (panMouse === false) {
           setCursor("Grab");
@@ -863,24 +860,12 @@ function keyHandler(event: KeyboardEvent) {
   }
 }
 
-function mouseInteraction(
-  event: MouseEvent,
-  entity: Entity,
-  offset: boolean = false
-) {
+function mouseInteraction(event: MouseEvent, entity: Entity) {
   var mouseX = event.pageX;
   var mouseY = event.pageY;
 
-  var offsetX = 0;
-  var offsetY = 0;
-
   if (entity.mouse !== true) {
     return false;
-  }
-
-  if (offset === true) {
-    offsetX = panOffsetX;
-    offsetY = panOffsetY;
   }
 
   switch (event.type) {
@@ -902,10 +887,10 @@ function mouseInteraction(
   switch (entity.shape) {
     case "image":
       if (
-        mouseX + offsetX >= entity.originX &&
-        mouseX + offsetX <= entity.originX + entity.width &&
-        mouseY + offsetY >= entity.originY &&
-        mouseY + offsetY <= entity.originY + entity.height
+        mouseX >= entity.originX &&
+        mouseX <= entity.originX + entity.width &&
+        mouseY >= entity.originY &&
+        mouseY <= entity.originY + entity.height
       ) {
         return true;
       }
@@ -915,11 +900,10 @@ function mouseInteraction(
     case "palette":
     case "rect":
       if (
-        mouseX + offsetX >= entity.originX - entity.strokeWeight &&
-        mouseX + offsetX <=
-          entity.originX + entity.width + entity.strokeWeight &&
-        mouseY + offsetY >= entity.originY - entity.strokeWeight &&
-        mouseY + offsetY <= entity.originY + entity.height + entity.strokeWeight
+        mouseX >= entity.originX - entity.strokeWeight &&
+        mouseX <= entity.originX + entity.width + entity.strokeWeight &&
+        mouseY >= entity.originY - entity.strokeWeight &&
+        mouseY <= entity.originY + entity.height + entity.strokeWeight
       ) {
         return true;
       }
@@ -2636,7 +2620,7 @@ function createData(target: EntityLayer, pattern: PatternMatrix) {
 
   // Generate Data
   // Scale Count & Colour Tally
-  sCount = 0;
+  var sCount = 0;
   output.push([0, "Colours Used"]);
 
   palette.countColours(pattern);
