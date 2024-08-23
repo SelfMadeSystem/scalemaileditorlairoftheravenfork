@@ -19,7 +19,7 @@ import { UiButton } from "./ui/UiButton";
 import { UiSection } from "./ui/UiSection";
 import { DrawUtils } from "./DrawUtils";
 import { EntityLayer } from "./EntityLayer";
-import { fontStyles } from "./Consts";
+import { fontStyles, rulerSizeData, rulerUnitData } from "./Consts";
 import { uiIconSize, uiOffsetX, uiOffsetY } from "./ui";
 import { PatternMatrix } from "./PatternMatrix";
 import { TemplateSwatches } from "./TemplateSwatches";
@@ -70,46 +70,15 @@ var panMouse = false;
 var panKey = false;
 
 // Overlay Variables
-var splashText;
+const splashText = document.getElementById("splashText")!;
 
 // Pattern Variables
 const editorPattern = new PatternMatrix();
 
 // Ruler Variables
-var rulerUnits = "metric";
-var rulerSize = "large";
-var rulerData = [];
+var rulerUnits: keyof typeof rulerUnitData = "metric";
+var rulerSize: keyof typeof rulerSizeData = "large";
 var sCount = 0;
-
-rulerData["small"] = {
-  width: 14,
-  height: 22,
-  gapH: 1,
-  gapV: 6,
-  weightS: 0.35,
-  weightR: 0.13,
-};
-rulerData["large"] = {
-  width: 22,
-  height: 36,
-  gapH: 2,
-  gapV: 12,
-  weightS: 0.54,
-  weightR: 0.42,
-};
-
-rulerData["metric"] = {
-  unitSize: "mm",
-  multiSize: 1,
-  unitWeight: "g",
-  multiWeight: 1,
-};
-rulerData["imperial"] = {
-  unitSize: '"',
-  multiSize: 0.0393701,
-  unitWeight: "oz",
-  multiWeight: 0.035274,
-};
 
 // UI Variables
 var uiToolbox = new UiSection();
@@ -118,7 +87,7 @@ var uiCamera = new UiSection();
 var currentTool = "toolboxCursor";
 
 // General Functions ====================================================================================================
-function addEvent(object, type, method) {
+function addEvent<T extends EventTarget>(object: T, type: string, method: any) {
   object.addEventListener(type, method, false);
 }
 
@@ -144,15 +113,13 @@ function calculateScale(
   return scale;
 }
 
-function changeCSS(selector, style, value) {
-  var css = document.styleSheets[0].cssRules;
+function changeCSS(selector: string, style: string, value: string) {
+  const css = document.styleSheets[0].cssRules;
 
-  var x = 0;
-  var y = 0;
-
-  for (x = 0; x < css.length; x++) {
-    if (css[x].selectorText == selector) {
-      css[x].style.setProperty(style, value);
+  for (let x = 0; x < css.length; x++) {
+    const rule = css[x] as CSSStyleRule;
+    if (rule.selectorText == selector) {
+      rule.style.setProperty(style, value);
       return true;
     }
   }
@@ -184,14 +151,8 @@ function distanceFromScale(
   }
 }
 
-function setURL(id?: string, title?: string) {
-  if (id) {
-    id = "?id=" + id;
-  } else {
-    id = "https://scalemail.lairoftheraven.uk";
-  }
-
-  //window.history.pushState(browserHistory, title, id);
+function setURL() {
+  // lol
 }
 
 // Camera Functions ===================================================================================================
@@ -261,22 +222,21 @@ function takePhoto() {
 // Image to Pattern Functions =========================================================================================
 // Objects
 
-
 // Variables
-var itpCanvas;
-var itpContext;
+var itpCanvas: HTMLCanvasElement;
+var itpContext: CanvasRenderingContext2D;
 
 var itpMemCanvas;
 var itpMemContext;
 
-var itpImage = false;
-var imageWidth;
-var imageHeight;
+var itpImage: HTMLImageElement;
+var imageWidth = 0;
+var imageHeight = 0;
 var itpImageData = new ImageMatrix();
 
 var itpStage = 0;
 var itpProcessRow = 0;
-var itpProcessData;
+var itpProcessData: ImageData;
 
 var sampleSpacingX = 0;
 var sampleSpacingY = 0;
@@ -289,8 +249,8 @@ var itpPatternHeight = 0;
 
 // Initialisation
 function itpSetCanvas() {
-  itpCanvas = document.getElementById("oCanvas");
-  itpContext = itpCanvas.getContext("2d");
+  itpCanvas = document.getElementById("oCanvas") as HTMLCanvasElement;
+  itpContext = itpCanvas.getContext("2d")!;
 
   itpCanvasResize();
   addEvent(window, "resize", itpCanvasResize);
@@ -299,8 +259,8 @@ function itpSetCanvas() {
 }
 
 function itpCanvasResize() {
-  var w = itpCanvas.parentElement.clientWidth;
-  var h = itpCanvas.parentElement.clientHeight;
+  var w = itpCanvas.parentElement!.clientWidth;
+  var h = itpCanvas.parentElement!.clientHeight;
   itpCanvas.height = h;
   itpCanvas.width = w;
 
@@ -331,12 +291,12 @@ function itpCanvasRedraw() {
 }
 
 function itpDisableButtons() {
-  document.getElementById("o-Prev").disabled = true;
-  document.getElementById("o-Next").disabled = true;
+  (document.getElementById("o-Prev") as HTMLInputElement).disabled = true;
+  (document.getElementById("o-Next") as HTMLInputElement).disabled = true;
 }
 
 /* Processing */
-function itpImageSelect(source) {
+function itpImageSelect(source: File) {
   itpStage = 1;
   itpImage = new Image();
 
@@ -351,7 +311,7 @@ function itpImageSelect(source) {
 }
 
 function itpImageProcess() {
-  if (itpImage === false) {
+  if (!itpImage) {
     alert("Please select an image to process first.");
     return false;
   }
@@ -368,7 +328,7 @@ function itpImageProcess() {
 
   // Configure Memory Canvas
   itpMemCanvas = document.createElement("canvas");
-  itpMemContext = itpMemCanvas.getContext("2d");
+  itpMemContext = itpMemCanvas.getContext("2d")!;
 
   itpMemContext.imageSmoothingEnabled = false;
 
@@ -444,14 +404,16 @@ function itpPreviewImage() {
   itpContext.drawImage(itpImage, 0, 0);
 }
 
-function itpProgressImage(x, y, xw, yh) {
+function itpProgressImage(x: number, y: number, xw: number, yh: number) {
   itpContext.fillStyle = "rgba(255, 255, 255, 0.5)";
   itpContext.fillRect(x, y, xw, yh);
 }
 
 function itpPreviewPattern() {
   // Get Pattern Width
-  itpPatternWidth = document.getElementById("o-Width").value;
+  itpPatternWidth = Number(
+    (document.getElementById("o-Width") as HTMLInputElement).value
+  );
 
   var sampleWidth = imageWidth / itpPatternWidth;
   var sampleHeight = Math.round(sampleWidth * drawUtils.scaleRatioHigh);
@@ -499,8 +461,6 @@ function itpGeneratePattern() {
   overlayInterface.showLoading();
 
   // Variables
-  var colour = 0;
-
   var x = 0;
   var y = 0;
   var z = 0;
@@ -570,7 +530,7 @@ function itpSendToEditor() {
 }
 
 // Input Functions ====================================================================================================
-function checkRadio(radios) {
+function checkRadio(radios: NodeListOf<HTMLInputElement>) {
   var x = 0;
   var y = radios.length;
 
@@ -579,6 +539,8 @@ function checkRadio(radios) {
       return radios[x].value;
     }
   }
+
+  return radios[0].value;
 }
 
 // Interaction Functions ==============================================================================================
@@ -603,7 +565,7 @@ function scaleCanvases() {
 }
 
 // Zooming Functions
-function zoomCanvas(inOut) {
+function zoomCanvas(inOut: number) {
   if (inOut > 0) {
     // Zoom Out
     if (drawUtils.scaleRadius > 15) {
@@ -617,28 +579,20 @@ function zoomCanvas(inOut) {
   }
 
   updateScaleVariables(drawUtils.scaleRadius);
-  swatches.regenerateSwatches(editorPattern, drawUtils);
+  swatches.regenerateSwatches(editorPattern);
 
   drawBg();
   editorLayer.redrawCanvas();
 }
 
-function zoomCanvasMouse(event) {
+function zoomCanvasMouse(event: WheelEvent) {
   zoomCanvas(event.deltaY);
 }
 
-function zoomExtents(sourcePattern, targetCanvas) {
-  if (targetCanvas === undefined) targetCanvas = false;
-
+function zoomExtents(sourcePattern: PatternMatrix) {
   var extWidth;
   var extHeight;
-  var target;
-
-  if (targetCanvas === false) {
-    target = editorLayer.canvas;
-  } else {
-    target = targetCanvas;
-  }
+  const target = editorLayer.canvas;
 
   extWidth = target.width / (sourcePattern.width * drawUtils.scaleSpacingX);
   extHeight =
@@ -652,13 +606,9 @@ function zoomExtents(sourcePattern, targetCanvas) {
     drawUtils.scaleRadius *= extHeight;
   }
 
-  if (targetCanvas === false) {
-    editorLayer.panReset();
-    zoomCanvas(1);
-    editorLayer.redrawCanvas(swatches);
-  } else {
-    target.panReset();
-  }
+  editorLayer.panReset();
+  zoomCanvas(1);
+  editorLayer.redrawCanvas();
 }
 
 function zoomReset() {
@@ -677,7 +627,7 @@ function drawBg() {
 
 // Mouse Functions ====================================================================================================
 // Canvas Mouse Interactions
-function mouseHandler(event) {
+function mouseHandler(event: MouseEvent) {
   var mouseX = event.pageX;
   var mouseY = event.pageY;
 
@@ -703,9 +653,12 @@ function mouseHandler(event) {
 
             setCursor("Pointer");
             // Tooltip
+            // TODO: Refactor; this is messy
+            const tooltipText = uiLayer.entities[x].tooltipText;
             if (
+              tooltipText !== undefined &&
               uiLayer.entities[x].tooltip === true &&
-              uiLayer.entities[x].tooltipText != uiLayer.tooltipText
+              tooltipText != uiLayer.tooltipText
             ) {
               var flipTooltip = false;
 
@@ -716,33 +669,32 @@ function mouseHandler(event) {
               uiLayer.setTooltip(
                 uiLayer.entities[x].originX + uiLayer.entities[x].width,
                 uiLayer.entities[x].originY + uiLayer.entities[x].height / 2,
-                uiLayer.entities[x].tooltipText,
+                tooltipText,
                 flipTooltip
               );
               uiRedraw = true;
             }
 
             // Expanding
-            if (uiLayer.entities[x].object) {
-              if (uiLayer.expanded !== false) {
-                if (
-                  uiLayer.expanded.group != uiLayer.entities[x].object.group
-                ) {
-                  if (uiLayer.entities[x].object.expandable === true) {
+            const obj = uiLayer.entities[x].object;
+            if (obj) {
+              if (uiLayer.expanded !== undefined) {
+                if (uiLayer.expanded.group != obj.group) {
+                  if (obj.expandable === true) {
                     uiLayer.expanded.expanded = false;
-                    uiLayer.expanded = uiLayer.entities[x].object;
-                    uiLayer.entities[x].object.expanded = true;
+                    uiLayer.expanded = obj;
+                    obj.expanded = true;
                     uiChange = true;
                   } else {
                     uiLayer.expanded.expanded = false;
-                    uiLayer.expanded = false;
+                    uiLayer.expanded = undefined;
                     uiChange = true;
                   }
                 }
               } else {
-                if (uiLayer.entities[x].object.expandable === true) {
-                  uiLayer.expanded = uiLayer.entities[x].object;
-                  uiLayer.entities[x].object.expanded = true;
+                if (obj.expandable === true) {
+                  uiLayer.expanded = obj;
+                  obj.expanded = true;
                   uiChange = true;
                 }
               }
@@ -764,9 +716,9 @@ function mouseHandler(event) {
       }
     }
 
-    if (uiLayer.expanded !== false) {
+    if (uiLayer.expanded !== undefined) {
       uiLayer.expanded.expanded = false;
-      uiLayer.expanded = false;
+      uiLayer.expanded = undefined;
       createInterface();
     }
 
@@ -878,7 +830,7 @@ function mouseHandler(event) {
           event.pageX - panCenterX,
           event.pageY - panCenterY
         );
-        editorLayer.redrawCanvas(swatches);
+        editorLayer.redrawCanvas();
         drawBg();
 
         panCenterX = event.pageX;
@@ -900,7 +852,7 @@ function mouseHandler(event) {
   return true;
 }
 
-function keyHandler(event) {
+function keyHandler(event: KeyboardEvent) {
   switch (event.which) {
     case 32:
       if (event.type == "keydown") {
@@ -915,9 +867,11 @@ function keyHandler(event) {
   }
 }
 
-function mouseInteraction(event, entity, offset) {
-  if (offset === undefined) offset = false;
-
+function mouseInteraction(
+  event: MouseEvent,
+  entity: Entity,
+  offset: boolean = false
+) {
   var mouseX = event.pageX;
   var mouseY = event.pageY;
 
@@ -982,14 +936,14 @@ function mouseInteraction(event, entity, offset) {
 
 let clicked = false;
 
-function mouseDownEditor(y, x, b) {
+function mouseDownEditor(y: number, x: number, b: number) {
   if (b === 1) {
     clicked = true;
     switch (currentTool) {
       case "toolboxCursor":
       case "toolboxBrush":
         editorPattern.colourScale(y, x, activeColour, true);
-        swatches.generatePatternSwatch(editorPattern, drawUtils);
+        swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
         drawBg();
         break;
@@ -1000,20 +954,20 @@ function mouseDownEditor(y, x, b) {
       //case "toolboxColumnPaste":
       case "toolboxFillRow":
         editorPattern.fillRow(y, activeColour);
-        swatches.generatePatternSwatch(editorPattern, drawUtils);
+        swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
         drawBg();
         break;
       case "toolboxFillColumn":
         editorPattern.fillColumn(x, y, activeColour);
-        swatches.generatePatternSwatch(editorPattern, drawUtils);
+        swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
         drawBg();
         break;
       case "toolboxFillColour":
         editorPattern.fill(y, x, activeColour);
         editorPattern.colourScale(y, x, activeColour, false);
-        swatches.generatePatternSwatch(editorPattern, drawUtils);
+        swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
         drawBg();
         break;
@@ -1023,7 +977,7 @@ function mouseDownEditor(y, x, b) {
       //case "toolboxRowPaste":
       case "toolboxReplace":
         editorPattern.replaceAll(editorPattern.getColour(y, x), activeColour);
-        swatches.generatePatternSwatch(editorPattern, drawUtils);
+        swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
         drawBg();
         break;
@@ -1040,11 +994,11 @@ function mouseDownEditor(y, x, b) {
   }
 }
 
-function mouseUpEditor(y, x, b) {
+function mouseUpEditor(_y: number, _x: number, _b: any) {
   clicked = false;
 }
 
-function mouseHoverEditor(y, x, b) {
+function mouseHoverEditor(y: number, x: number, b: number) {
   if (b === 1) {
     switch (currentTool) {
       case "toolboxBrush":
@@ -1052,7 +1006,7 @@ function mouseHoverEditor(y, x, b) {
         setCursor("Brush");
         if (clicked) {
           editorPattern.colourScale(y, x, activeColour, true);
-          swatches.generatePatternSwatch(editorPattern, drawUtils);
+          swatches.generatePatternSwatch(editorPattern);
           editorLayer.redrawCanvas();
           drawBg();
         }
@@ -1089,7 +1043,7 @@ function mouseHoverEditor(y, x, b) {
   }
 }
 
-function mouseClickUI(id) {
+function mouseClickUI(id: string) {
   var x = 0;
   var y = palette.colours.length;
 
@@ -1104,7 +1058,7 @@ function mouseClickUI(id) {
     // Camera Controls
     case "cameraCenter":
       editorLayer.panReset();
-      editorLayer.redrawCanvas(swatches);
+      editorLayer.redrawCanvas();
       break;
 
     case "cameraExtents":
@@ -1118,7 +1072,7 @@ function mouseClickUI(id) {
     case "cameraReset":
       editorLayer.panReset();
       zoomReset();
-      editorLayer.redrawCanvas(swatches);
+      editorLayer.redrawCanvas();
       break;
 
     case "cameraPhoto":
@@ -1217,7 +1171,7 @@ function mouseClickUI(id) {
 }
 
 // Cursor Functions
-function setCursor(cursor) {
+function setCursor(cursor: string) {
   interactionLayer.className = "cursor" + cursor;
 }
 
@@ -1372,7 +1326,8 @@ function buildOverlays() {
   nObject = {
     type: "dropdown",
     id: "o-Colour",
-    change: (e) => setActiveColour((e.target as HTMLSelectElement).value),
+    change: (e) =>
+      setActiveColour(Number((e.target as HTMLSelectElement).value)),
     data: palette.colours,
     label: "Colour",
   };
@@ -1885,22 +1840,21 @@ function buildOverlays() {
 }
 
 // Palette Functions ==================================================================================================
-function setActiveColour(colour) {
+function setActiveColour(colour: number) {
   activeColour = colour;
   createInterface();
   uiLayer.redrawCanvas();
 }
 
 // Pattern Functions ==================================================================================================
-function newPattern(target, width, height, patternShape, colour) {
-  if (width === undefined) width = 5;
-  if (height === undefined) height = 9;
-  if (patternShape === undefined) patternShape = 0;
-  if (colour === undefined) colour = activeColour;
-
+function newPattern(
+  target: PatternMatrix,
+  width = 5,
+  height = 9,
+  patternShape = 0,
+  colour = activeColour
+) {
   var x = 0;
-  var height;
-  var width;
 
   target.clearMatrix();
 
@@ -1941,27 +1895,27 @@ function newPattern(target, width, height, patternShape, colour) {
 }
 
 function newFromShape() {
-  var width = document.getElementById("o-Width").value;
-  var height = document.getElementById("o-Height").value;
-  var shape = document.getElementsByName("shape");
+  var width = (document.getElementById("o-Width") as HTMLInputElement).value;
+  var height = (document.getElementById("o-Height") as HTMLInputElement).value;
+  var shapeElements = document.getElementsByName(
+    "shape"
+  ) as NodeListOf<HTMLInputElement>;
 
-  shape = parseInt(checkRadio(shape));
+  const shape = parseInt(checkRadio(shapeElements));
 
   editorPattern.clearMatrix();
-  newPattern(editorPattern, width, height, shape);
+  newPattern(editorPattern, Number(width), Number(height), shape);
   setURL();
   zoomExtents(editorPattern);
   createInterface();
   uiLayer.redrawCanvas();
   overlayInterface.hideOverlay();
-  swatches.generatePatternSwatch(editorPattern, drawUtils);
+  swatches.generatePatternSwatch(editorPattern);
   editorLayer.redrawCanvas();
   drawBg();
 }
 
-function patternShapeSquare(target, colour) {
-  if (colour === undefined) colour = activeColour;
-
+function patternShapeSquare(target: PatternMatrix, colour: number) {
   var height = target.height;
   var width = target.width;
 
@@ -1986,9 +1940,7 @@ function patternShapeSquare(target, colour) {
   target.getSize();
 }
 
-function patternShapeDiamond(target, colour) {
-  if (colour === undefined) colour = activeColour;
-
+function patternShapeDiamond(target: PatternMatrix, colour: number) {
   var height = target.height;
   var width = target.width;
   var breakHeight = 0;
@@ -2055,9 +2007,7 @@ function patternShapeDiamond(target, colour) {
 }
 
 // Scale Functions ====================================================================================================
-function updateScaleVariables(radius) {
-  if (radius === undefined) radius = 75;
-
+function updateScaleVariables(radius = 75) {
   // Scale Base
   drawUtils.scaleRadius = radius;
 
@@ -2094,11 +2044,6 @@ function updateScaleVariables(radius) {
 // Shape Functions ====================================================================================================
 
 // Startup Functions ==================================================================================================
-function setupElements() {
-  // Overlay
-  splashText = document.getElementById("splashText");
-}
-
 function startDesigner() {
   // Configure Scales
   splashText.innerHTML = "Calculating scales...";
@@ -2110,7 +2055,7 @@ function startDesigner() {
   // Templates
   splashText.innerHTML = "Generating swatches...";
 
-  swatches.regenerateSwatches(editorPattern, drawUtils);
+  swatches.regenerateSwatches(editorPattern);
 
   // Editor
   let nEnt = new Entity();
@@ -2156,7 +2101,7 @@ function startDesigner() {
   // Hide Splash Screen
   splashText.innerHTML = "Here we go!";
   overlayInterface.hideOverlay();
-  overlayBackground.className = "";
+  document.getElementById("overlayBackground")!.className = "";
 
   // Check compatability
   swatches.patternSwatch.context.globalCompositeOperation = "overlay";
@@ -2179,7 +2124,7 @@ function toggleEmpty() {
     drawUtils.drawEmpty = true;
   }
 
-  swatches.regenerateSwatches(editorPattern, drawUtils);
+  swatches.regenerateSwatches(editorPattern);
   editorLayer.redrawCanvas();
 }
 
@@ -2668,7 +2613,7 @@ function createPalette(target: EntityLayer) {
   }
 }
 
-function createData(target, pattern) {
+function createData(target: EntityLayer, pattern: PatternMatrix) {
   // Variables
   var pHeight = pattern.physicalHeight;
   var pWidth = pattern.physicalWidth;
@@ -2685,7 +2630,6 @@ function createData(target, pattern) {
   var output: [number, string][] = [];
 
   var oHeight = 0;
-  var oWidth = 0;
 
   var posX = 0;
   var posY = 0;
@@ -2716,9 +2660,9 @@ function createData(target, pattern) {
 
   // Width
   mWidth =
-    pWidth * rulerData[rulerSize].width +
-    (pWidth - 1) * rulerData[rulerSize].gapH;
-  mWidth *= rulerData[rulerUnits]["multiSize"];
+    pWidth * rulerSizeData[rulerSize].width +
+    (pWidth - 1) * rulerSizeData[rulerSize].gapH;
+  mWidth *= rulerUnitData[rulerUnits].multiSize;
 
   if (rulerUnits == "imperial") {
     mFraction = " " + inchesFraction(mWidth);
@@ -2727,13 +2671,14 @@ function createData(target, pattern) {
 
   output.push([
     1,
-    "~" + mWidth + rulerData[rulerUnits].unitSize + mFraction + " wide",
+    "~" + mWidth + rulerUnitData[rulerUnits].unitSize + mFraction + " wide",
   ]);
 
   // Height
   mHeight =
-    (pHeight - 1) * rulerData[rulerSize].gapV + rulerData[rulerSize].height;
-  mHeight *= rulerData[rulerUnits]["multiSize"];
+    (pHeight - 1) * rulerSizeData[rulerSize].gapV +
+    rulerSizeData[rulerSize].height;
+  mHeight *= rulerUnitData[rulerUnits].multiSize;
 
   if (rulerUnits == "imperial") {
     mFraction = " " + inchesFraction(mHeight);
@@ -2742,7 +2687,7 @@ function createData(target, pattern) {
 
   output.push([
     1,
-    "~" + mHeight + rulerData[rulerUnits].unitSize + mFraction + " high",
+    "~" + mHeight + rulerUnitData[rulerUnits].unitSize + mFraction + " high",
   ]);
 
   // Physical Weight
@@ -2750,28 +2695,39 @@ function createData(target, pattern) {
 
   wScales =
     sCount *
-    rulerData[rulerSize].weightS *
-    rulerData[rulerUnits]["multiWeight"];
+    rulerSizeData[rulerSize].weightS *
+    rulerUnitData[rulerUnits].multiWeight;
   wRings =
     sCount *
-    rulerData[rulerSize].weightR *
+    rulerSizeData[rulerSize].weightR *
     2 *
-    rulerData[rulerUnits]["multiWeight"];
+    rulerUnitData[rulerUnits].multiWeight;
   wTotal = wScales + wRings;
 
-  wScales = wScales.toFixed(2);
-  wRings = wRings.toFixed(2);
-  wTotal = wTotal.toFixed(2);
+  const sScales = wScales.toFixed(2);
+  const sRings = wRings.toFixed(2);
+  const sTotal = wTotal.toFixed(2);
 
   output.push([
     1,
-    sCount + " Scales (~" + wScales + rulerData[rulerUnits].unitWeight + ")",
+    sCount +
+      " Scales (~" +
+      sScales +
+      rulerUnitData[rulerUnits].unitWeight +
+      ")",
   ]);
   output.push([
     1,
-    sCount * 2 + " Rings (~" + wRings + rulerData[rulerUnits].unitWeight + ")",
+    sCount * 2 +
+      " Rings (~" +
+      sRings +
+      rulerUnitData[rulerUnits].unitWeight +
+      ")",
   ]);
-  output.push([1, "~" + wTotal + rulerData[rulerUnits].unitWeight + " Total"]);
+  output.push([
+    1,
+    "~" + sTotal + rulerUnitData[rulerUnits].unitWeight + " Total",
+  ]);
 
   // Create Entities
   y = output.length;
@@ -2815,10 +2771,9 @@ function createData(target, pattern) {
   }
 }
 
-function inchesFraction(v) {
+function inchesFraction(v: number) {
   return Math.floor(16 * (v % 1)) + "/16ths";
 }
 
-setupElements();
 drawUtils.imageAssets.loadImages();
 addEvent(window, "resize", scaleCanvases);

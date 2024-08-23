@@ -1,3 +1,5 @@
+import { PatternMatrix } from "./PatternMatrix";
+
 export class ColourPalette {
   public colours: PaletteColour[] = [];
 
@@ -40,7 +42,7 @@ export class ColourPalette {
   }
 
   colourInformation() {
-    const info = [];
+    const info: [string, number][] = [];
 
     for (let x = 2; x < this.colours.length; x++) {
       info.push([this.colours[x].name, this.colours[x].count]);
@@ -49,7 +51,7 @@ export class ColourPalette {
     return info;
   }
 
-  countColours(target: any) {
+  countColours(target: PatternMatrix) {
     const tH = target.height;
     const tW = target.width;
 

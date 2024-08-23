@@ -2,6 +2,7 @@ import { fontStyles, updateInterval } from "./Consts";
 import { DrawUtils } from "./DrawUtils";
 import Entity from "./Entity";
 import { TemplateSwatches } from "./TemplateSwatches";
+import { UiButton } from "./ui/UiButton";
 
 export class EntityLayer {
   public canvas: HTMLCanvasElement;
@@ -26,7 +27,7 @@ export class EntityLayer {
   public tooltipX = 0;
   public tooltipY = 0;
 
-  public expanded = false;
+  public expanded: UiButton | undefined;
 
   constructor(
     props:
@@ -37,7 +38,7 @@ export class EntityLayer {
           height: number;
         },
     private drawUtils: DrawUtils,
-    private swatches: TemplateSwatches,
+    private swatches: TemplateSwatches
   ) {
     if (typeof props === "string") {
       this.id = props;
@@ -146,7 +147,12 @@ export class EntityLayer {
             break;
 
           case "image":
-            this.drawUtils.drawImg(this.context, this.entities[x], this.offsetX, this.offsetY);
+            this.drawUtils.drawImg(
+              this.context,
+              this.entities[x],
+              this.offsetX,
+              this.offsetY
+            );
             break;
 
           case "palette":
