@@ -289,25 +289,8 @@ export class PatternMatrix {
   }
 
   fillColumn(column: number, row: number, colour: number) {
-    var inset = false;
-    if (this.height > 0) {
-      if (row == 0) {
-        if (this.matrix[row + 1][0].colour != 0) {
-          inset = true;
-        }
-      } else {
-        if (this.matrix[row - 1][0].colour != 0) {
-          inset = true;
-        }
-      }
-    } else {
-      inset = true;
-    }
-    var x = inset ? 0 : 1;
-    var y = this.matrix.length;
-
-    for (; x < y; x += 2) {
-      this.matrix[x][column].colour = colour;
+    for (let x = 0 + row % 2; x < this.matrix.length; x+=2) {
+      this.matrix[x][column].setColour(colour);
     }
   }
 
