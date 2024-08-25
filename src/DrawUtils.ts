@@ -211,6 +211,10 @@ export class DrawUtils {
     context.closePath();
 
     // Cutout Hole
+    context.moveTo(
+      originX + this.scaleInnerHoleOffset - this.scaleOffsetX + this.scaleInnerHoleRadius - this.scaleOffsetXHalf,
+      originY - this.scaleInnerHoleOffset - this.scaleOffsetX
+    );
     context.arc(
       originX + this.scaleInnerHoleOffset - this.scaleOffsetX,
       originY - this.scaleInnerHoleOffset - this.scaleOffsetX,

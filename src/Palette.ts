@@ -149,16 +149,16 @@ export class ColourPalette {
       ).setPlastic()
     );
     this.addColour(
-      new PaletteColour("Transparent red", 255, 0, 0, 25).setPlastic()
+      new PaletteColour("Transparent red", 255, 0, 0, 60).setPlastic()
     );
     this.addColour(
-      new PaletteColour("Transparent blue", 0, 0, 255, 25).setPlastic()
+      new PaletteColour("Transparent blue", 0, 0, 255, 60).setPlastic()
     );
     this.addColour(
-      new PaletteColour("Transparent green", 0, 255, 0, 25).setPlastic()
+      new PaletteColour("Transparent green", 0, 255, 0, 60).setPlastic()
     );
     this.addColour(
-      new PaletteColour("Transparent yellow", 255, 255, 0, 25).setPlastic()
+      new PaletteColour("Transparent yellow", 255, 255, 0, 60).setPlastic()
     );
   }
 }
