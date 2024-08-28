@@ -5,6 +5,7 @@ import ImageLoader from "./ImageLoader";
 import { TemplateSwatches } from "./TemplateSwatches";
 import { themes } from "./Theme";
 import { uiIconSize } from "./ui";
+import { arcBetween } from "./utils";
 
 export class DrawUtils {
   public theme: 0 | 1 = 0;
@@ -214,20 +215,25 @@ export class DrawUtils {
   public drawScalePath(context: CanvasRenderingContext2D) {
     // Build Outer Scale
     context.beginPath();
-    context.arc(
-      this.scaleOffsetX * 2,
-      this.scaleOffsetY,
-      this.scaleRadius,
-      5.19,
-      1.08
-    );
-    context.arc(
-      this.scaleRadius,
-      this.scaleOffsetY,
-      this.scaleRadius,
-      2.05,
-      4.23
-    );
+    // context.arc(
+    //   this.scaleOffsetX * 2,
+    //   this.scaleOffsetY,
+    //   this.scaleRadius,
+    //   5.19,
+    //   1.08
+    // );
+    // context.arc(
+    //   this.scaleRadius,
+    //   this.scaleOffsetY,
+    //   this.scaleRadius,
+    //   2.05,
+    //   4.23
+    // );
+    const top = 0;
+    const bottom = this.scaleOffsetY * 2;
+    const middle = this.scaleOffsetX + this.scaleRadius / 2;
+    arcBetween(context, this.scaleRadius, middle, top, middle, bottom);
+    arcBetween(context, this.scaleRadius, middle, bottom, middle, top);
     context.closePath();
 
     // Cutout Hole
