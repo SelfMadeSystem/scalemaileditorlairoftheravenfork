@@ -119,7 +119,7 @@ export class TemplateSwatches {
     var z = 0;
 
     if (alpha <= 60) {
-      this.drawUtils.drawScalePath(swatch.context, 0, 0);
+      this.drawUtils.drawScalePath(swatch.context);
       swatch.context.fillStyle = hex;
       swatch.context.fill("evenodd");
     } else {
@@ -129,7 +129,7 @@ export class TemplateSwatches {
       swatch.context.shadowOffsetX = this.shadowX;
       swatch.context.shadowOffsetY = this.shadowY;
 
-      this.drawUtils.drawScalePath(swatch.context, 0, 0);
+      this.drawUtils.drawScalePath(swatch.context);
       swatch.context.fillStyle = hex;
       swatch.context.fill("evenodd");
       this.drawUtils.shapeShadowReset(swatch.context);
@@ -150,7 +150,7 @@ export class TemplateSwatches {
         if (swatch.context.globalCompositeOperation !== "overlay") {
           console.log("Browser doesn't support the overlay blend mode.");
         } else {
-          this.drawUtils.drawScalePath(swatch.context, 0, 0);
+          this.drawUtils.drawScalePath(swatch.context);
           swatch.context.fillStyle = this.textureSwatches[v].pattern ?? "#f00";
           swatch.context.fill("evenodd");
         }
@@ -166,7 +166,7 @@ export class TemplateSwatches {
       if (swatch.context.globalCompositeOperation !== "overlay") {
         console.log("Browser doesn't support the overlay blend mode.");
       } else {
-        this.drawUtils.drawScalePath(swatch.context, 0, 0);
+        this.drawUtils.drawScalePath(swatch.context);
         swatch.context.fillStyle = this.gradientSwatches[z].gradient ?? "#f00";
         swatch.context.fill("evenodd");
       }

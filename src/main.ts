@@ -562,16 +562,16 @@ function zoomCanvas(inOut: number) {
   if (inOut > 0) {
     // Zoom Out
     if (drawUtils.scaleRadius > 15) {
-      drawUtils.scaleRadius -= 5;
+      drawUtils.scaleRadius /= 1.1;
     }
   } else {
     // Zoom In
     if (drawUtils.scaleRadius < 150) {
-      drawUtils.scaleRadius += 5;
+      drawUtils.scaleRadius *= 1.1;
     }
   }
 
-  updateScaleVariables(drawUtils.scaleRadius);
+  drawUtils.updateScaleVariables(drawUtils.scaleRadius);
   swatches.regenerateSwatches(editorPattern);
 
   drawBg();
@@ -975,7 +975,6 @@ function mouseHoverEditor(y: number, x: number, b: number) {
   if (b === 1) {
     switch (currentTool) {
       case "toolboxBrush":
-        console.log(y, x, b);
         setCursor("Brush");
         if (clicked) {
           editorPattern.colourScale(y, x, activeColour, true);
@@ -1974,48 +1973,13 @@ function patternShapeDiamond(target: PatternMatrix, colour: number) {
   target.getSize();
 }
 
-// Scale Functions ====================================================================================================
-function updateScaleVariables(radius = 75) {
-  // Scale Base
-  drawUtils.scaleRadius = radius;
-
-  drawUtils.scaleInnerHoleOffset = radius / 2;
-  drawUtils.scaleInnerHoleRadius = radius / 4;
-
-  // Offsets
-  drawUtils.scaleOffsetX = drawUtils.scaleRadius / 25;
-  drawUtils.scaleOffsetY = 0.8879189152169245 * radius;
-  drawUtils.scaleOffsetR = drawUtils.scaleRadius - drawUtils.scaleOffsetY;
-
-  drawUtils.scaleOffsetXDouble = drawUtils.scaleOffsetX * 2;
-  drawUtils.scaleOffsetXHalf = drawUtils.scaleOffsetX / 2;
-
-  // Height & Width in PX
-  drawUtils.scaleHeightPx = drawUtils.scaleOffsetY * 2;
-  drawUtils.scaleHeightPxHalf = drawUtils.scaleHeightPx / 2;
-  drawUtils.scaleHeightPxQuarter = drawUtils.scaleHeightPx / 4;
-
-  drawUtils.scaleWidthPx = drawUtils.scaleRadius + drawUtils.scaleOffsetX * 2;
-  drawUtils.scaleWidthPxHalf = drawUtils.scaleWidthPx / 2;
-
-  // Spacing in PX
-  drawUtils.scaleSpacingX = drawUtils.scaleWidthPx + drawUtils.scaleOffsetX;
-  drawUtils.scaleSpacingY =
-    drawUtils.scaleHeightPx -
-    (drawUtils.scaleHeightPx -
-      drawUtils.scaleRadius / 2 -
-      drawUtils.scaleOffsetX);
-
-  drawUtils.scaleSpacingXHalf = drawUtils.scaleSpacingX / 2;
-}
-
 // Shape Functions ====================================================================================================
 
 // Startup Functions ==================================================================================================
 function startDesigner() {
   // Configure Scales
   splashText.innerHTML = "Calculating scales...";
-  updateScaleVariables(75);
+  drawUtils.updateScaleVariables(75);
 
   // Pattern
   newPattern(editorPattern, 5, 9, 1);

@@ -11,15 +11,10 @@ export class DrawUtils {
 
   // Scale Variables
   public scaleRadius = 75;
-  public scaleInnerHoleOffset = 0;
-  public scaleInnerHoleRadius = 0;
 
   public scaleOffsetX = 0;
   public scaleOffsetY = 0;
   public scaleOffsetR = 0;
-
-  public scaleOffsetXDouble = 0;
-  public scaleOffsetXHalf = 0;
 
   public scaleHeightPx = 0;
   public scaleHeightPxHalf = 0;
@@ -34,12 +29,38 @@ export class DrawUtils {
   public scaleSpacingY = 0;
 
   public scaleRatioWide = 0.609022556;
-  public scaleRatioHigh = 1.641975309;
+  public scaleRatioHigh = 1 / this.scaleRatioWide;
 
   // Settings
   public drawEmpty = true;
 
   constructor(public imageAssets: ImageLoader) {}
+
+  updateScaleVariables(radius = 75) {
+    // Scale Base
+    this.scaleRadius = radius;
+
+    // Offsets
+    this.scaleOffsetX = this.scaleRadius / 25;
+    this.scaleOffsetY = Math.sqrt(0.7884) * radius;
+    this.scaleOffsetR = this.scaleRadius - this.scaleOffsetY;
+
+    // Height & Width in PX
+    this.scaleHeightPx = this.scaleOffsetY * 2;
+    this.scaleHeightPxHalf = this.scaleHeightPx / 2;
+    this.scaleHeightPxQuarter = this.scaleHeightPx / 4;
+
+    this.scaleWidthPx = this.scaleRadius + this.scaleOffsetX * 2;
+    this.scaleWidthPxHalf = this.scaleWidthPx / 2;
+
+    // Spacing in PX
+    this.scaleSpacingX = this.scaleWidthPx + this.scaleOffsetX;
+    this.scaleSpacingY =
+      this.scaleHeightPx -
+      (this.scaleHeightPx - this.scaleRadius / 2 - this.scaleOffsetX);
+
+    this.scaleSpacingXHalf = this.scaleSpacingX / 2;
+  }
 
   public drawBackgroundDots(
     context: CanvasRenderingContext2D,
@@ -149,7 +170,7 @@ export class DrawUtils {
     entity: Entity,
     offsetX: number,
     offsetY: number,
-    swatches: TemplateSwatches,
+    swatches: TemplateSwatches
   ) {
     // Colour
     this.drawRect(context, entity, offsetX, offsetY);
@@ -190,20 +211,19 @@ export class DrawUtils {
     }
   }
 
-  public drawScalePath(
-    context: CanvasRenderingContext2D,
-    originX: number,
-    originY: number
-  ) {
-    originX += this.scaleOffsetXDouble;
-    originY += this.scaleOffsetY;
-
+  public drawScalePath(context: CanvasRenderingContext2D) {
     // Build Outer Scale
     context.beginPath();
-    context.arc(originX, originY, this.scaleRadius, 5.19, 1.08);
     context.arc(
-      originX + this.scaleRadius - this.scaleOffsetXDouble,
-      originY,
+      this.scaleOffsetX * 2,
+      this.scaleOffsetY,
+      this.scaleRadius,
+      5.19,
+      1.08
+    );
+    context.arc(
+      this.scaleRadius,
+      this.scaleOffsetY,
       this.scaleRadius,
       2.05,
       4.23
@@ -212,13 +232,13 @@ export class DrawUtils {
 
     // Cutout Hole
     context.moveTo(
-      originX + this.scaleInnerHoleOffset - this.scaleOffsetX + this.scaleInnerHoleRadius - this.scaleOffsetXHalf,
-      originY - this.scaleInnerHoleOffset - this.scaleOffsetX
+      this.scaleRadius * 0.75 + this.scaleOffsetX * -3,
+      this.scaleOffsetY - this.scaleRadius / 2 - this.scaleOffsetX
     );
     context.arc(
-      originX + this.scaleInnerHoleOffset - this.scaleOffsetX,
-      originY - this.scaleInnerHoleOffset - this.scaleOffsetX,
-      this.scaleInnerHoleRadius - this.scaleOffsetXHalf,
+      this.scaleOffsetX + this.scaleRadius / 2,
+      this.scaleOffsetY - this.scaleRadius / 2 - this.scaleOffsetX,
+      this.scaleRadius / 4 - this.scaleOffsetX * 0.5,
       0,
       2 * Math.PI
     );
