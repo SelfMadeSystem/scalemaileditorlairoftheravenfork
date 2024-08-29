@@ -31,6 +31,8 @@ body {
 
   margin: 0px;
   padding: 0px;
+
+  overflow: hidden;
 }
 
 /* Paragraph Styles */
@@ -230,7 +232,7 @@ h1 {
 
 /* Cursors */
 .cursorBrush {
-  cursor: url(images/cursorBrush.png), crosshair;
+  cursor: /* url(images/cursorBrush.png), */ crosshair;
 }
 
 .cursorColumn {
@@ -244,7 +246,7 @@ input[type="button"]:disabled {
 }
 
 .cursorFill {
-  cursor: url(images/cursorFill.png), crosshair;
+  cursor: /* url(images/cursorFill.png), */ crosshair;
 }
 
 .cursorInherit,
@@ -277,7 +279,7 @@ option,
 }
 
 .cursorReplace {
-  cursor: url(images/cursorReplace.png), crosshair;
+  cursor: /* url(images/cursorReplace.png), */ crosshair;
 }
 
 .cursorRow {
@@ -685,6 +687,8 @@ label img:hover,
 .overlayButton {
   position: relative;
   display: block;
+  background-color: transparent;
+  border: none;
 }
 
 .overlayButton img {
