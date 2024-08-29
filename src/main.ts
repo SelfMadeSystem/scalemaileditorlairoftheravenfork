@@ -24,6 +24,7 @@ import { uiIconSize, uiOffsetX, uiOffsetY } from "./ui";
 import { PatternMatrix } from "./PatternMatrix";
 import { TemplateSwatches } from "./TemplateSwatches";
 import { ImageMatrix } from "./ImageStuff";
+import { Pos, posAdd, posDistSq } from "./utils";
 
 // Variables ==========================================================================================================
 const imageLoader = new ImageLoader(startDesigner);
@@ -121,25 +122,28 @@ function changeCSS(selector: string, style: string, value: string) {
   return false;
 }
 
-function distanceFromScale(
-  fromX: number,
-  fromY: number,
-  toX: number,
-  toY: number,
+function isMouseOnScale(
+  mouseX: number,
+  mouseY: number,
+  scaleX: number,
+  scaleY: number,
   offsetX: number,
   offsetY: number
 ) {
-  var scaleCenterX = toX + offsetX + drawUtils.scaleWidthPxHalf;
-  var scaleCenterY = toY + offsetY + drawUtils.scaleHeightPxHalf;
+  const m: Pos = {
+    x: mouseX,
+    y: mouseY,
+  }
+  const o: Pos = {
+    x: scaleX + offsetX,
+    y: scaleY + offsetY,
+  };
+  const c1 = posAdd(drawUtils.scalePathCenter1, o);
+  const c2 = posAdd(drawUtils.scalePathCenter2, o);
 
-  var dx = fromX - scaleCenterX;
-  var dy = fromY - scaleCenterY;
+  const dist = Math.max(posDistSq(c1, m), posDistSq(c2, m));
 
-  var ry = drawUtils.scaleRadius - drawUtils.scaleOffsetR * 2;
-
-  var dist = Math.abs(Math.sqrt(dx * dx * 2.25 + dy * dy));
-
-  if (dist < ry) {
+  if (dist < drawUtils.scalePathRadius * drawUtils.scalePathRadius) {
     return true;
   }
 }
@@ -591,7 +595,7 @@ function zoomExtents(sourcePattern: PatternMatrix) {
   extHeight =
     target.height /
     ((sourcePattern.height - 1) * drawUtils.scaleSpacingY +
-      drawUtils.scaleHeightPx * 1.1);
+      drawUtils.scaleHeight * 1.1);
 
   if (extWidth < extHeight) {
     drawUtils.scaleRadius *= extWidth;
@@ -732,10 +736,10 @@ function mouseHandler(event: MouseEvent) {
       var scaleY = 0;
       var sHalf = 0;
 
-      var windowEdgeL = 0 - drawUtils.scaleWidthPx;
-      var windowEdgeR = window.innerWidth + drawUtils.scaleWidthPx;
-      var windowEdgeT = 0 - drawUtils.scaleHeightPx;
-      var windowEdgeB = window.innerWidth + drawUtils.scaleHeightPx;
+      var windowEdgeL = 0 - drawUtils.scaleWidth;
+      var windowEdgeR = window.innerWidth + drawUtils.scaleWidth;
+      var windowEdgeT = 0 - drawUtils.scaleHeight;
+      var windowEdgeB = window.innerWidth + drawUtils.scaleHeight;
 
       for (let y = 0; y < patternHeight; y++) {
         for (let x = 0; x < patternWidth; x++) {
@@ -746,7 +750,7 @@ function mouseHandler(event: MouseEvent) {
               sHalf = 0;
             } else {
               // Even
-              sHalf = drawUtils.scaleSpacingXHalf;
+              sHalf = drawUtils.scaleSpacingX / 2;
             }
 
             // Test
@@ -763,7 +767,7 @@ function mouseHandler(event: MouseEvent) {
               scaleY < windowEdgeB
             ) {
               if (
-                distanceFromScale(
+                isMouseOnScale(
                   mouseX,
                   mouseY,
                   scaleX,

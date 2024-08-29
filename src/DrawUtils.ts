@@ -5,7 +5,7 @@ import ImageLoader from "./ImageLoader";
 import { TemplateSwatches } from "./TemplateSwatches";
 import { themes } from "./Theme";
 import { uiIconSize } from "./ui";
-import { arcBetween } from "./utils";
+import { arc, arcFill, findCircle, Pos } from "./utils";
 
 export class DrawUtils {
   public theme: 0 | 1 = 0;
@@ -13,24 +13,33 @@ export class DrawUtils {
   // Scale Variables
   public scaleRadius = 75;
 
-  public scaleOffsetX = 0;
-  public scaleOffsetY = 0;
-  public scaleOffsetR = 0;
+  // Height & Width
+  public scaleHeight = 0;
+  public scaleWidth = 0;
 
-  public scaleHeightPx = 0;
-  public scaleHeightPxHalf = 0;
-  public scaleHeightPxQuarter = 0;
-
-  public scaleWidthPx = 0;
-  public scaleWidthPxHalf = 0;
-
+  // Spacing
   public scaleSpacingX = 0;
-  public scaleSpacingXHalf = 0;
-
   public scaleSpacingY = 0;
 
-  public scaleRatioWide = 0.609022556;
+  // Scale Path pre calc
+  public scalePathCenter1: Pos = { x: 0, y: 0 };
+  public scalePathCenter2: Pos = { x: 0, y: 0 };
+  public scalePathRadius = 0;
+  public scalePathTop: Pos = { x: 0, y: 0 };
+  public scalePathBottom: Pos = { x: 0, y: 0 };
+
+  // Hole
+  public scaleHole = 0;
+
+  // Ratio
+  // Measurements taken from https://theringlord.com/24k-gold-plate-large-scales/4
+  // Size: 7/8” x 1.41” with 0.35” hole (22.2mm x 35.8mm,8.9mm hole)
+  // 22.5 / 35.8 = 0.628491620
+  // 8.9 / 22.5 = 0.395555556
+  // Hole's distance from top is not provided by TheRingLord.
+  public scaleRatioWide = 0.62849162;
   public scaleRatioHigh = 1 / this.scaleRatioWide;
+  public scaleRatioHole = 0.395555556;
 
   // Settings
   public drawEmpty = true;
@@ -41,26 +50,35 @@ export class DrawUtils {
     // Scale Base
     this.scaleRadius = radius;
 
-    // Offsets
-    this.scaleOffsetX = this.scaleRadius / 25;
-    this.scaleOffsetY = Math.sqrt(0.7884) * radius;
-    this.scaleOffsetR = this.scaleRadius - this.scaleOffsetY;
-
     // Height & Width in PX
-    this.scaleHeightPx = this.scaleOffsetY * 2;
-    this.scaleHeightPxHalf = this.scaleHeightPx / 2;
-    this.scaleHeightPxQuarter = this.scaleHeightPx / 4;
-
-    this.scaleWidthPx = this.scaleRadius + this.scaleOffsetX * 2;
-    this.scaleWidthPxHalf = this.scaleWidthPx / 2;
+    this.scaleHeight = radius * this.scaleRatioHigh;
+    this.scaleWidth = radius;
 
     // Spacing in PX
-    this.scaleSpacingX = this.scaleWidthPx + this.scaleOffsetX;
-    this.scaleSpacingY =
-      this.scaleHeightPx -
-      (this.scaleHeightPx - this.scaleRadius / 2 - this.scaleOffsetX);
+    this.scaleSpacingX = this.scaleWidth + radius * 0.1;
+    this.scaleSpacingY = radius * 0.46;
 
-    this.scaleSpacingXHalf = this.scaleSpacingX / 2;
+    // Scale Path pre calc
+    const middleX = this.scaleWidth / 2;
+    const middleY = this.scaleHeight / 2;
+    this.scalePathTop = { x: middleX, y: 0 };
+    this.scalePathBottom = { x: middleX, y: this.scaleHeight };
+    const { center: c1, radius: r1 } = findCircle(
+      middleX,
+      0,
+      0,
+      middleY,
+      middleX,
+      this.scaleHeight
+    );
+    this.scalePathCenter2 = { x: this.scaleWidth - c1.x, y: c1.y };
+    this.scalePathCenter1 = c1;
+    this.scalePathRadius = r1;
+
+    // Hole
+    // divide by 2 because `radius` refers to the outer radius which is equal to
+    // the inner diameter, so divide by 2 to get the inner radius
+    this.scaleHole = (radius * this.scaleRatioHole) / 2;
   }
 
   public drawBackgroundDots(
@@ -79,9 +97,6 @@ export class DrawUtils {
     var x = 0;
     var y = 0;
 
-    var drawX = 0;
-    var drawY = 0;
-
     var backgroundOriginX = 0;
     var backgroundOriginY = 0;
 
@@ -96,7 +111,7 @@ export class DrawUtils {
 
     // Calculate Bottom Left Scale
     if (pattern.matrix[pattern.matrix.length - 1][0].colour == 0) {
-      m = this.scaleSpacingXHalf;
+      m = this.scaleSpacingX / 2;
     }
 
     backgroundOriginX = layer.centerX - w - dot + this.scaleSpacingX + m;
@@ -115,24 +130,25 @@ export class DrawUtils {
       backgroundOriginY -= stepY;
     }
 
-    // Draw Dots
-    context.beginPath();
-    for (y = 0; (y - 1) * stepY < layer.height; y++) {
-      for (x = 0; (x - 1) * stepX < layer.width; x++) {
-        drawX = Math.round(backgroundOriginX + stepX * x);
-        drawY = Math.round(backgroundOriginY + stepY * y);
-        context.rect(drawX, drawY, dot, dot);
-
-        drawX += Math.round(this.scaleSpacingXHalf);
-        drawY -= Math.round(this.scaleSpacingY);
-        context.rect(drawX, drawY, dot, dot);
-      }
-    }
-
-    context.closePath();
-
     context.fillStyle = colour;
     context.fill("nonzero");
+
+    // Draw Dots
+    for (y = 0; (y - 1) * stepY < layer.height; y++) {
+      for (x = 0; (x - 1) * stepX < layer.width; x++) {
+        const draw: Pos = {
+          x: Math.round(backgroundOriginX + stepX * x),
+          y: Math.round(backgroundOriginY + stepY * y),
+        };
+
+        arcFill(context, draw, dot);
+
+        draw.x += Math.round(this.scaleSpacingX / 2);
+        draw.y -= Math.round(this.scaleSpacingY);
+
+        arcFill(context, draw, dot);
+      }
+    }
   }
 
   public drawImg(
@@ -215,39 +231,27 @@ export class DrawUtils {
   public drawScalePath(context: CanvasRenderingContext2D) {
     // Build Outer Scale
     context.beginPath();
-    // context.arc(
-    //   this.scaleOffsetX * 2,
-    //   this.scaleOffsetY,
-    //   this.scaleRadius,
-    //   5.19,
-    //   1.08
-    // );
-    // context.arc(
-    //   this.scaleRadius,
-    //   this.scaleOffsetY,
-    //   this.scaleRadius,
-    //   2.05,
-    //   4.23
-    // );
-    const top = 0;
-    const bottom = this.scaleOffsetY * 2;
-    const middle = this.scaleOffsetX + this.scaleRadius / 2;
-    arcBetween(context, this.scaleRadius, middle, top, middle, bottom);
-    arcBetween(context, this.scaleRadius, middle, bottom, middle, top);
+    const middleX = this.scaleWidth / 2;
+    arc(
+      context,
+      this.scalePathCenter1,
+      this.scalePathRadius,
+      this.scalePathBottom,
+      this.scalePathTop
+    );
+    arc(
+      context,
+      this.scalePathCenter2,
+      this.scalePathRadius,
+      this.scalePathTop,
+      this.scalePathBottom
+    );
     context.closePath();
 
     // Cutout Hole
-    context.moveTo(
-      this.scaleRadius * 0.75 + this.scaleOffsetX * -3,
-      this.scaleOffsetY - this.scaleRadius / 2 - this.scaleOffsetX
-    );
-    context.arc(
-      this.scaleOffsetX + this.scaleRadius / 2,
-      this.scaleOffsetY - this.scaleRadius / 2 - this.scaleOffsetX,
-      this.scaleRadius / 4 - this.scaleOffsetX * 0.5,
-      0,
-      2 * Math.PI
-    );
+    const holeY = this.scaleHeight * 0.19; // estimate
+    context.moveTo(middleX + this.scaleHole, holeY);
+    context.arc(middleX, holeY, this.scaleHole, 0, 2 * Math.PI);
     context.closePath();
   }
 

@@ -46,8 +46,7 @@ export class TemplateSwatches {
       (pattern.height - 1) * this.drawUtils.scaleSpacingY +
       this.scaleSwatches[0].height;
     var width =
-      pattern.width * this.drawUtils.scaleSpacingX +
-      this.drawUtils.scaleWidthPx;
+      pattern.width * this.drawUtils.scaleSpacingX + this.drawUtils.scaleWidth;
 
     this.scaleSwatch(this.patternSwatch, height, width);
 
@@ -72,7 +71,7 @@ export class TemplateSwatches {
         sHalf = 0;
       } else {
         // Even
-        sHalf = this.drawUtils.scaleSpacingXHalf;
+        sHalf = this.drawUtils.scaleSpacingX / 2;
       }
 
       // Add Scale Entity
@@ -93,8 +92,8 @@ export class TemplateSwatches {
     for (let x = 0; x < this.palette.colours.length; x++) {
       this.scaleSwatch(
         this.scaleSwatches[x],
-        this.drawUtils.scaleHeightPx + this.shadowY + this.shadowBlur / 2,
-        this.drawUtils.scaleWidthPx + this.shadowX + this.shadowBlur / 2
+        this.drawUtils.scaleHeight + this.shadowY + this.shadowBlur / 2,
+        this.drawUtils.scaleWidth + this.shadowX + this.shadowBlur / 2
       );
       this.generateScaleSwatch(
         this.scaleSwatches[x],
@@ -183,8 +182,8 @@ export class TemplateSwatches {
     for (x = 0; x < y; x++) {
       this.scaleSwatch(
         this.textureSwatches[x],
-        this.drawUtils.scaleHeightPx,
-        this.drawUtils.scaleHeightPx
+        this.drawUtils.scaleHeight,
+        this.drawUtils.scaleHeight
       );
       this.generateTextureSwatch(this.textureSwatches[x], tex[x]);
     }
@@ -214,8 +213,8 @@ export class TemplateSwatches {
     for (x = 0; x < y; x++) {
       this.scaleSwatch(
         this.gradientSwatches[x],
-        this.drawUtils.scaleHeightPx,
-        this.drawUtils.scaleWidthPx
+        this.drawUtils.scaleHeight,
+        this.drawUtils.scaleWidth
       );
       this.generateGradientSwatch(this.gradientSwatches[x], gra[x]);
     }
