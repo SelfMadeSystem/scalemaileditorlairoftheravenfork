@@ -1030,6 +1030,7 @@ function mouseClickUI(id: string) {
     case "cameraCenter":
       editorLayer.panReset();
       editorLayer.redrawCanvas();
+      drawBg();
       break;
 
     case "cameraExtents":
