@@ -562,16 +562,23 @@ function scaleCanvases() {
 }
 
 // Zooming Functions
-function zoomCanvas(inOut: number) {
-  if (inOut > 0) {
+function zoomCanvas(scroll: number) {
+  const scrollSpeed = scroll;
+  const zoomFactor = 1.1;
+  const minScale = 15;
+  const maxScale = 150;
+
+  if (scrollSpeed > 0) {
     // Zoom Out
-    if (drawUtils.scaleRadius > 15) {
-      drawUtils.scaleRadius /= 1.1;
+    if (drawUtils.scaleRadius > minScale) {
+      drawUtils.scaleRadius /= Math.pow(zoomFactor, scrollSpeed / 100);
+      drawUtils.scaleRadius = Math.max(drawUtils.scaleRadius, minScale);
     }
   } else {
     // Zoom In
-    if (drawUtils.scaleRadius < 150) {
-      drawUtils.scaleRadius *= 1.1;
+    if (drawUtils.scaleRadius < maxScale) {
+      drawUtils.scaleRadius *= Math.pow(zoomFactor, -scrollSpeed / 100);
+      drawUtils.scaleRadius = Math.min(drawUtils.scaleRadius, maxScale);
     }
   }
 
@@ -1052,11 +1059,11 @@ function mouseClickUI(id: string) {
       break;
 
     case "cameraZoomIn":
-      zoomCanvas(0);
+      zoomCanvas(-100);
       break;
 
     case "cameraZoomOut":
-      zoomCanvas(1);
+      zoomCanvas(100);
       break;
 
     // Toolbox Controls

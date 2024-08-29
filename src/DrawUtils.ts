@@ -103,11 +103,7 @@ export class DrawUtils {
     var stepX = this.scaleSpacingX;
     var stepY = this.scaleSpacingY * 2;
 
-    var dot = Math.floor(this.scaleRadius / 30);
-
-    if (dot < 1) {
-      dot = 1;
-    }
+    const dot = Math.max(1, this.scaleRadius / 30);
 
     // Calculate Bottom Left Scale
     if (pattern.matrix[pattern.matrix.length - 1][0].colour == 0) {
