@@ -14,7 +14,6 @@ import { ColourPalette } from "./Palette";
 import { themes } from "./Theme";
 import { overlayInterface, setOverlay } from "./overlay/OverlayInterface";
 import { OverlayScreen } from "./overlay/OverlayScreen";
-import { OverlayObject } from "./overlay/OverlayObject";
 import { UiButton } from "./ui/UiButton";
 import { UiSection } from "./ui/UiSection";
 import { DrawUtils } from "./DrawUtils";
@@ -1159,26 +1158,22 @@ function setCursor(cursor: string) {
 function buildOverlays() {
   // Variables
   var nWindow;
-  var nObject: OverlayObject;
-
   // Create New
   nWindow = new OverlayScreen("new", "Create New Pattern");
 
   // Bar
   // New from Shape
-  nObject = {
+  nWindow.addObjectToBar({
     type: "button",
     title: "New from Shape...",
     src: "buttonNew",
     click: () => {
       setOverlay("newShape");
     },
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // New from Image
-  nObject = {
+  nWindow.addObjectToBar({
     type: "button",
     title: "New from Image...",
     src: "buttonImage",
@@ -1187,22 +1182,18 @@ function buildOverlays() {
       itpStage = 0;
       itpSetCanvas();
     },
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Pane
   // Information
-  nObject = {
+  nWindow.addObjectToPane({
     type: "text",
     title: "Scalemail Designer",
     string: [
       "Start a new inlay design based on either a default shape, or using a simple image.",
       "You will be able to configure your new design on the next page.",
     ],
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   overlayInterface.addScreen(nWindow);
 
@@ -1212,23 +1203,19 @@ function buildOverlays() {
   // Bar
   // Select Shape
   // Title
-  nObject = {
+  nWindow.addObjectToBar({
     type: "text",
     title: "Select Shape",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Wrapper (Open)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
     state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Radio Button (Square)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputRadio",
     id: "shapeSquare",
     checked: true,
@@ -1237,12 +1224,10 @@ function buildOverlays() {
     value: 0,
     src: "shapeSquare.png",
     alt: "Square",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Radio Button (Diamond)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputRadio",
     id: "shapeDiamond",
     checked: false,
@@ -1251,114 +1236,90 @@ function buildOverlays() {
     value: 1,
     src: "shapeDiamond.png",
     alt: "Diamond",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Wrapper (Close)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Pattern Settings
   // Title
-  nObject = {
+  nWindow.addObjectToBar({
     type: "text",
     title: "Pattern Settings",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Wrapper (Open)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
     state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Width
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputNumber",
     id: "o-Width",
     increment: 1,
     label: "Width",
     value: 5,
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Height
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputNumber",
     id: "o-Height",
     increment: 1,
     label: "Height",
     value: 9,
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Colours
-  nObject = {
+  nWindow.addObjectToBar({
     type: "dropdown",
     id: "o-Colour",
     change: (e) =>
       setActiveColour(Number((e.target as HTMLSelectElement).value)),
     data: palette.colours,
     label: "Colour",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Wrapper (Close)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Wrapper (Open)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
     state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Previous Button
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputButton",
     id: "o-Prev",
     label: "Previous",
     value: "Previous",
     click: () => setOverlay("new"),
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Create Button
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputButton",
     label: "Create Pattern",
     value: "Create Pattern",
     click: newFromShape,
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Wrapper (Close)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Pane
   // Information
-  nObject = {
+  nWindow.addObjectToPane({
     type: "text",
     title: "How to Use",
     string: [
@@ -1366,9 +1327,7 @@ function buildOverlays() {
       "Select the desired shape from the options provided, then set the height, width, and colour as desired.",
       "Note that some shapes, such as the diamond, require a fixed height/width ratio that will be calculated automatically.",
     ],
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   overlayInterface.addScreen(nWindow);
 
@@ -1378,23 +1337,19 @@ function buildOverlays() {
 
   // Bar
   // Title
-  nObject = {
+  nWindow.addObjectToBar({
     type: "text",
     title: "Select Image",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Wrapper (Open)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
     state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // File Select
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputFile",
     id: "o-File",
     accepted: "image/*",
@@ -1411,19 +1366,15 @@ function buildOverlays() {
 
       itpImageSelect(files[0]);
     },
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Wrapper (Close)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Information
-  nObject = {
+  nWindow.addObjectToBar({
     type: "text",
     title: "How to Use",
     string: [
@@ -1431,55 +1382,43 @@ function buildOverlays() {
       "Your image will be processed on your computer and will not be uploaded.",
       "You will be able to configure your pattern after processing.",
     ],
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Wrapper (Open)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
     state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Previous Button
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputButton",
     id: "o-Prev",
     label: "Previous",
     value: "Previous",
     click: () => setOverlay("new"),
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Next Button
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputButton",
     id: "o-Next",
     label: "Process",
     value: "Process",
     click: itpImageProcess,
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Wrapper (Close)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Pane
   // Canvas
-  nObject = {
+  nWindow.addObjectToPane({
     type: "canvas",
     id: "oCanvas",
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   overlayInterface.addScreen(nWindow);
 
@@ -1488,53 +1427,43 @@ function buildOverlays() {
 
   // Bar
   // Wrapper (Open)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
     state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Pattern Width
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputNumber",
     id: "o-Width",
     label: "Width",
     value: 10,
     change: itpCanvasRedraw,
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Wrapper (Close)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Title
-  nObject = {
+  nWindow.addObjectToBar({
     type: "text",
     title: "How to Use",
     string: [
       "Change the width of the pattern to increase scale density.",
       "Focus on the motif/design of your image. Perform minor adjustments using the editor.",
     ],
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Wrapper (Open)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
     state: 1,
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Previous Button
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputButton",
     id: "o-Prev",
     label: "Previous",
@@ -1544,36 +1473,28 @@ function buildOverlays() {
       itpStage = 0;
       itpSetCanvas();
     },
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Next Button
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputButton",
     id: "o-Next",
     label: "Build",
     value: "Build",
     click: itpGeneratePattern,
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Wrapper (Close)
-  nObject = {
+  nWindow.addObjectToBar({
     type: "inputWrapper",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Pane
   // Canvas
-  nObject = {
+  nWindow.addObjectToPane({
     type: "canvas",
     id: "oCanvas",
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   overlayInterface.addScreen(nWindow);
 
@@ -1581,60 +1502,50 @@ function buildOverlays() {
   nWindow = new OverlayScreen("settings", "Settings");
 
   // Bar
-  nObject = {
+  nWindow.addObjectToBar({
     type: "text",
     string: [
       "Use these toggles to configure the inlay designer.",
       "Settings are not saved or preserved. Any changes from default will need to be set every time you start the designer.",
     ],
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Pane
   // Scale Size
-  nObject = {
+  nWindow.addObjectToPane({
     id: "toggleSize",
     type: "toggle",
     title: "Scale Size",
     string: ["Small", "Large"],
     change: toggleSize,
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   // Show Empty Scales
-  nObject = {
+  nWindow.addObjectToPane({
     id: "toggleEmpty",
     type: "toggle",
     title: "Empty Scales",
     string: ["Hide", "Show"],
     change: toggleEmpty,
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   // Theme
-  nObject = {
+  nWindow.addObjectToPane({
     id: "toggleTheme",
     type: "toggle",
     title: "Theme",
     string: ["Light", "Dark"],
     change: toggleTheme,
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   // Units
-  nObject = {
+  nWindow.addObjectToPane({
     id: "toggleUnits",
     type: "toggle",
     title: "Measurement Units",
     string: ["Imperial", "Metric"],
     change: toggleUnits,
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   overlayInterface.addScreen(nWindow);
 
@@ -1643,19 +1554,17 @@ function buildOverlays() {
 
   // Bar
   // About
-  nObject = {
+  nWindow.addObjectToBar({
     type: "text",
     title: "About",
     string: [
       "Use this tool to create scalemail inlays and patterns, share your designs with the world, and browse the community submissions.",
       "This tool may be used for any purpose.",
     ],
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Legal
-  nObject = {
+  nWindow.addObjectToBar({
     type: "text",
     title: "Legal",
     string: [
@@ -1664,135 +1573,107 @@ function buildOverlays() {
       "All patterns created using this tool belong to the author. Lair of the Raven infers no copyright or other claim on user submitted patterns.",
       "If you believe a pattern is in violation of your rights, please contact Lair of the Raven for removal.",
     ],
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Links
   // Title
-  nObject = {
+  nWindow.addObjectToBar({
     type: "text",
     title: "Links",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Lair of the Raven
-  nObject = {
+  nWindow.addObjectToBar({
     type: "anchor",
     string: "Lair of the Raven",
     url: "http://lairoftheraven.uk",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Contact
   // Title
-  nObject = {
+  nWindow.addObjectToBar({
     type: "text",
     title: "Contact",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // E-Mail
-  nObject = {
+  nWindow.addObjectToBar({
     type: "anchor",
     string: "E-Mail",
     url: "mailto:contact@lairoftheraven.uk",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Facebook
-  nObject = {
+  nWindow.addObjectToBar({
     type: "anchor",
     string: "Facebook",
     url: "https://www.facebook.com/lairoftheraven/",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Reddit
-  nObject = {
+  nWindow.addObjectToBar({
     type: "anchor",
     string: "Reddit",
     url: "https://www.reddit.com/r/lairoftheraven/",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Twitter
-  nObject = {
+  nWindow.addObjectToBar({
     type: "anchor",
     string: "@LairoftheRaven",
     url: "https://twitter.com/LairoftheRaven",
-  };
-
-  nWindow.addObjectToBar(nObject);
+  });
 
   // Pane
   // Tutorial Video
   // Title
-  nObject = {
+  nWindow.addObjectToPane({
     type: "text",
     title: "Tutorial Playlist",
     string: [
       "Need help using the inlay designer? Check out our video tutorial series on YouTube for a detailed breakdown!",
     ],
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   // Introduction Video
-  nObject = {
+  nWindow.addObjectToPane({
     type: "brick",
     title: "Introduction",
     url: "https://www.youtube.com/watch?v=wyye0o6paNE&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=1&t=3s",
     src: "tutorialIntroThumb.jpg",
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   // Interface Video
-  nObject = {
+  nWindow.addObjectToPane({
     type: "brick",
     title: "User Interface Overview",
     url: "https://www.youtube.com/watch?v=7EZebcOiM9Q&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=2",
     src: "tutorialIntroThumb.jpg",
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   // Creating Video
-  nObject = {
+  nWindow.addObjectToPane({
     type: "brick",
     title: "Creating a New Pattern",
     url: "https://www.youtube.com/watch?v=gTldguZj_yE&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=3",
     src: "tutorialCreateThumb.jpg",
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   // Gallery Video
-  nObject = {
+  nWindow.addObjectToPane({
     type: "brick",
     title: "Saving, Loading, and Sharing",
     url: "https://www.youtube.com/watch?v=-raNeXvR2Fc&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=4",
     src: "tutorialGalleryThumb.jpg",
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   // Future Video
-  nObject = {
+  nWindow.addObjectToPane({
     type: "brick",
     title: "Future Development",
     url: "https://www.youtube.com/watch?v=PA1ckRVSgnE&list=PLu9KjnY1dxRbLRRMHNmAhpH1hNYDMyQ2z&index=5",
     src: "tutorialIntroThumb.jpg",
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   overlayInterface.addScreen(nWindow);
 
@@ -1802,7 +1683,7 @@ function buildOverlays() {
   // Bar
 
   // Pane
-  nObject = {
+  nWindow.addObjectToPane({
     type: "text",
     title:
       "Looks like the browser you are using doesn't support the latest web technologies.",
@@ -1811,9 +1692,7 @@ function buildOverlays() {
       "As the browser you are using doesn't support these features, I advise that you install the latest version of a web-standards compliant browser such as Firefox, Chrome, or Edge.",
       "You can continue to use the designer, but be aware that certain things may not work properly, or display incorrectly.",
     ],
-  };
-
-  nWindow.addObjectToPane(nObject);
+  });
 
   overlayInterface.addScreen(nWindow);
 }
