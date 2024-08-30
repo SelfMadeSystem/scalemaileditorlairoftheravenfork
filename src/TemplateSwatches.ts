@@ -193,7 +193,7 @@ export class TemplateSwatches {
     swatch.context.globalAlpha = alphaMod;
     const img = this.drawUtils.imageAssets.getImage("textureBrushed");
     if (img) {
-      swatch.context.drawImage(img, 0, 0);
+      swatch.context.drawImage(img, 0, 0, swatch.width, swatch.height);
     } else {
       swatch.context.fillStyle = "rgba(255, 0, 0, 1)"; // obvious colour for debugging
       swatch.context.fillRect(0, 0, swatch.width, swatch.height);
