@@ -2302,9 +2302,25 @@ function setupToolboxButtons() {
 
   pEnt.name = "toolboxFill";
   pEnt.group = "fill";
+  pEnt.expandable = true;
+
+  // Fill Colour
+  let cEnt = new UiButton();
+
+  cEnt.name = "toolboxFillColour";
+  cEnt.group = "fill";
+
+  cEnt.helptext = [
+    "Fill Area",
+    "Click to change all adjacent scales of the same colour.",
+  ];
+  cEnt.icon = "iconFillColour";
+  cEnt.tiptext = "Fill Colour";
+
+  pEnt.addButton(cEnt);
 
   // Fill Row
-  let cEnt = new UiButton();
+  cEnt = new UiButton();
 
   cEnt.name = "toolboxFillRow";
   cEnt.group = "fill";
@@ -2326,23 +2342,6 @@ function setupToolboxButtons() {
   cEnt.tiptext = "Fill Column";
 
   pEnt.addButton(cEnt);
-
-  // Fill Colour
-  cEnt = new UiButton();
-
-  cEnt.name = "toolboxFillColour";
-  cEnt.group = "fill";
-
-  cEnt.helptext = [
-    "Fill Area",
-    "Click to change all adjacent scales of the same colour.",
-  ];
-  cEnt.icon = "iconFillColour";
-  cEnt.tiptext = "Fill Colour";
-
-  pEnt.addButton(cEnt);
-
-  pEnt.expandable = true;
 
   uiToolbox.addButton(pEnt);
 
