@@ -32,7 +32,7 @@ export class DrawUtils {
   public scaleHole = 0;
 
   // Ratio
-  // Measurements taken from https://theringlord.com/24k-gold-plate-large-scales/4
+  // Measurements taken from https://theringlord.com/24k-gold-plate-large-scales/
   // Size: 7/8” x 1.41” with 0.35” hole (22.2mm x 35.8mm,8.9mm hole)
   // 22.5 / 35.8 = 0.628491620
   // 8.9 / 22.5 = 0.395555556

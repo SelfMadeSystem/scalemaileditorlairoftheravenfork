@@ -144,7 +144,6 @@ export class EntityLayer {
               Math.round(this.centerY - oh + this.offsetY)
             );
             return;
-            break;
 
           case "image":
             this.drawUtils.drawImg(
@@ -162,15 +161,6 @@ export class EntityLayer {
               this.offsetX,
               this.offsetY,
               this.swatches
-            );
-            break;
-
-          case "rect":
-            this.drawUtils.drawRect(
-              this.context,
-              this.entities[x],
-              this.offsetX,
-              this.offsetY
             );
             break;
 

@@ -901,7 +901,6 @@ function mouseInteraction(event: MouseEvent, entity: Entity) {
       break;
 
     case "palette":
-    case "rect":
       if (
         mouseX >= entity.originX - entity.strokeWeight &&
         mouseX <= entity.originX + entity.width + entity.strokeWeight &&

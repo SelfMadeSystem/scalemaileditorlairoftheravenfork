@@ -4,7 +4,7 @@ import { UiButton } from "./ui/UiButton";
 export default class Entity {
   public id = "";
   public object: UiButton | undefined;
-  public shape = "";
+  public shape: "canvas" | "palette" | "text" | "image" = "text";
 
   public mouse = false;
   public mouseClick = false;
