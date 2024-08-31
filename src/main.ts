@@ -2372,7 +2372,7 @@ function createPalette(target: EntityLayer) {
     paletteIcon * Math.ceil((colors - 1) / perRow) -
     strokeWeight / 2;
 
-  for (let x = 0; x < colors; x++) {
+  for (let x = 1; x < colors; x++) {
     const strokeColour =
       x === activeColour
         ? themes[drawUtils.theme].paletteColour
