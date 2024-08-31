@@ -4,8 +4,8 @@ import { PatternMatrix } from "./PatternMatrix";
 import { Swatch } from "./Swatch";
 
 export class TemplateSwatches {
-  public gradientSwatches: Swatch[] = [new Swatch(), new Swatch()];
-  public textureSwatches: Swatch[] = [new Swatch(), new Swatch()];
+  public gradientSwatches: [Swatch, Swatch] = [new Swatch(), new Swatch()];
+  public textureSwatches: [Swatch, Swatch] = [new Swatch(), new Swatch()];
   public scaleSwatches: Swatch[];
   public patternSwatch: Swatch = new Swatch();
 

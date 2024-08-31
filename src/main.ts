@@ -10,7 +10,7 @@
 import "./style.css";
 import ImageLoader from "./ImageLoader";
 import Entity from "./Entity";
-import { ColourPalette } from "./Palette";
+import { ColourPalette, PaletteColour } from "./Palette";
 import { themes } from "./Theme";
 import { overlayInterface, setOverlay } from "./overlay/OverlayInterface";
 import { OverlayScreen } from "./overlay/OverlayScreen";
@@ -24,6 +24,7 @@ import { PatternMatrix } from "./PatternMatrix";
 import { TemplateSwatches } from "./TemplateSwatches";
 import { ImageMatrix } from "./ImageStuff";
 import { Pos, posAdd, posDistSq } from "./utils";
+import { Swatch } from "./Swatch";
 
 // Variables ==========================================================================================================
 const imageLoader = new ImageLoader(startDesigner);
@@ -124,18 +125,16 @@ function changeCSS(selector: string, style: string, value: string) {
 function isMouseOnScale(
   mouseX: number,
   mouseY: number,
-  scaleX: number,
-  scaleY: number,
-  offsetX: number,
-  offsetY: number
+  pxX: number,
+  pxY: number
 ) {
   const m: Pos = {
     x: mouseX,
     y: mouseY,
-  }
+  };
   const o: Pos = {
-    x: scaleX + offsetX,
-    y: scaleY + offsetY,
+    x: pxX,
+    y: pxY,
   };
   const c1 = posAdd(drawUtils.scalePathCenter1, o);
   const c2 = posAdd(drawUtils.scalePathCenter2, o);
@@ -622,7 +621,6 @@ function zoomReset() {
 function drawBg() {
   drawUtils.drawBackgroundDots(
     backgroundContext,
-    editorLayer,
     editorPattern,
     editorLayer
   );
@@ -725,21 +723,19 @@ function mouseHandler(event: MouseEvent) {
 
     // Check Editor Elements
     if (currentTool != "cameraPan") {
-      var patternHeight = editorPattern.height;
-      var patternWidth = editorPattern.width;
-      var patternX = Math.round(
+      const patternHeight = editorPattern.height;
+      const patternWidth = editorPattern.width;
+      const patternX = Math.round(
         editorLayer.centerX -
           editorLayer.entities[0].imageCanvas!.width / 2 +
           editorLayer.offsetX
       );
-      var patternY = Math.round(
+      const patternY = Math.round(
         editorLayer.centerY -
           editorLayer.entities[0].imageCanvas!.height / 2 +
           editorLayer.offsetY
       );
 
-      var scaleX = 0;
-      var scaleY = 0;
       var sHalf = 0;
 
       var windowEdgeL = 0 - drawUtils.scaleWidth;
@@ -749,7 +745,7 @@ function mouseHandler(event: MouseEvent) {
 
       for (let y = 0; y < patternHeight; y++) {
         for (let x = 0; x < patternWidth; x++) {
-          if (editorPattern.matrix[y][x].colour > 0) {
+          if (x > 0 || editorPattern.matrix[y][x].colour > 0) {
             // Even-Odd Spacing
             if (editorPattern.matrix[y][0].colour == 0) {
               // Odd
@@ -760,35 +756,21 @@ function mouseHandler(event: MouseEvent) {
             }
 
             // Test
-            scaleX = Math.round(sHalf + drawUtils.scaleSpacingX * x);
-            scaleY = Math.round(drawUtils.scaleSpacingY * y);
+            const scaleX = Math.round(sHalf + drawUtils.scaleSpacingX * x);
+            const scaleY = Math.round(drawUtils.scaleSpacingY * y);
 
-            //editorLayer.context.globalAlpha = 0.1;
-            //editorLayer.context.fillRect(patternX + scaleX, patternY + scaleY, drawUtils.scaleWidthPx, drawUtils.scaleHeightPx);
+            const pxX = patternX + scaleX;
+            const pxY = patternY + scaleY;
 
             if (
-              scaleX > windowEdgeL &&
-              scaleX < windowEdgeR &&
-              scaleY > windowEdgeT &&
-              scaleY < windowEdgeB
+              pxX > windowEdgeL &&
+              pxX < windowEdgeR &&
+              pxY > windowEdgeT &&
+              pxY < windowEdgeB
             ) {
-              if (
-                isMouseOnScale(
-                  mouseX,
-                  mouseY,
-                  scaleX,
-                  scaleY,
-                  patternX,
-                  patternY
-                ) === true
-              ) {
-                // console.log(
-                //   "y:" + y + " x: " + x + " resolved " + event.which + "."
-                // );
+              if (isMouseOnScale(mouseX, mouseY, pxX, pxY) === true) {
                 switch (event.type) {
                   case "mousedown":
-                    //console.log(y, x + " Resolved click.");
-
                     mouseDownEditor(y, x, event.which);
                     break;
                   case "mouseup":
@@ -2373,31 +2355,28 @@ function createInterface() {
 }
 
 function createPalette(target: EntityLayer) {
-  var x = 0;
-  var y = palette.colours.length;
+  const colors = palette.colours.length;
 
-  var r = 0;
-  var c = 0;
+  let r = 0;
+  let c = 0;
 
-  var strokeWeight = 4;
-  var strokeColour = themes[drawUtils.theme].paletteColour;
+  const strokeWeight = 4;
 
-  var perRow = 4;
+  const perRow = Math.ceil(Math.pow(colors, 0.6) / 2);
   var paletteIcon = uiIconSize / 1.5;
 
   var boxOriginX = uiOffsetX - strokeWeight / 2;
   var boxOriginY =
     target.height -
     uiOffsetY -
-    paletteIcon * Math.ceil(y / perRow) -
+    paletteIcon * Math.ceil((colors - 1) / perRow) -
     strokeWeight / 2;
 
-  for (x = 1; x < y; x++) {
-    if (x == activeColour) {
-      strokeColour = themes[drawUtils.theme].paletteColour;
-    } else {
-      strokeColour = palette.colours[x].color;
-    }
+  for (let x = 0; x < colors; x++) {
+    const strokeColour =
+      x === activeColour
+        ? themes[drawUtils.theme].paletteColour
+        : palette.colours[x].color;
 
     const nEnt = new Entity();
     nEnt.id = "palette" + x;
@@ -2598,3 +2577,17 @@ function inchesFraction(v: number) {
 
 drawUtils.imageAssets.loadImages();
 window.addEventListener("resize", scaleCanvases);
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "m") {
+    const r = Math.floor(Math.random() * 256);
+    const g = Math.floor(Math.random() * 256);
+    const b = Math.floor(Math.random() * 256);
+    const random = "#" + r.toString(16) + g.toString(16) + b.toString(16);
+    palette.addColour(new PaletteColour(random, r, g, b, 255));
+    swatches.scaleSwatches.push(new Swatch());
+    swatches.generateScaleSwatches();
+    createInterface();
+    uiLayer.redrawCanvas();
+  }
+});

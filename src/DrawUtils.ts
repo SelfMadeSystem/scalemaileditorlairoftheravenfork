@@ -83,7 +83,6 @@ export class DrawUtils {
 
   public drawBackgroundDots(
     context: CanvasRenderingContext2D,
-    layer: EntityLayer,
     pattern: any,
     editorLayer: EntityLayer
   ) {
@@ -110,12 +109,12 @@ export class DrawUtils {
       m = this.scaleSpacingX / 2;
     }
 
-    backgroundOriginX = layer.centerX - w - dot + this.scaleSpacingX + m;
-    backgroundOriginY = layer.centerY + h - dot * 1.5;
+    backgroundOriginX = editorLayer.centerX - w - dot + this.scaleSpacingX + m;
+    backgroundOriginY = editorLayer.centerY + h - dot * 1.5;
 
     // Calculate Pan Offset
-    backgroundOriginX += layer.offsetX;
-    backgroundOriginY += layer.offsetY;
+    backgroundOriginX += editorLayer.offsetX;
+    backgroundOriginY += editorLayer.offsetY;
 
     // Step Back to Edge
     for (x = 0; backgroundOriginX > 0; x++) {
@@ -130,11 +129,11 @@ export class DrawUtils {
     context.fill("nonzero");
 
     // Draw Dots
-    for (y = 0; (y - 1) * stepY < layer.height; y++) {
-      for (x = 0; (x - 1) * stepX < layer.width; x++) {
+    for (let y = backgroundOriginY; y < editorLayer.height; y+=stepY) {
+      for (let x = backgroundOriginX; x < editorLayer.width; x+=stepX) {
         const draw: Pos = {
-          x: Math.round(backgroundOriginX + stepX * x),
-          y: Math.round(backgroundOriginY + stepY * y),
+          x: Math.round(x),
+          y: Math.round(y),
         };
 
         arcFill(context, draw, dot);
