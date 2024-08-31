@@ -541,11 +541,13 @@ function scaleCanvases() {
 }
 
 // Zooming Functions
-function zoomCanvas(scroll: number) {
+function zoomCanvas(scroll: number, mouse?: Pos) {
   const scrollSpeed = scroll;
   const zoomFactor = 1.1;
   const minScale = 15;
   const maxScale = 150;
+
+  const ogZoom = drawUtils.scaleRadius;
 
   if (scrollSpeed > 0) {
     // Zoom Out
@@ -553,7 +555,7 @@ function zoomCanvas(scroll: number) {
       drawUtils.scaleRadius /= Math.pow(zoomFactor, scrollSpeed / 100);
       drawUtils.scaleRadius = Math.max(drawUtils.scaleRadius, minScale);
     }
-  } else {
+  } else if (scrollSpeed < 0) {
     // Zoom In
     if (drawUtils.scaleRadius < maxScale) {
       drawUtils.scaleRadius *= Math.pow(zoomFactor, -scrollSpeed / 100);
@@ -561,12 +563,19 @@ function zoomCanvas(scroll: number) {
     }
   }
 
+  if (mouse) {
+    editorLayer.panTowards(ogZoom, drawUtils.scaleRadius, mouse.x, mouse.y);
+  }
+
   drawUtils.updateScaleVariables(drawUtils.scaleRadius);
   swatches.regenerateSwatches(editorPattern);
 }
 
 function zoomCanvasMouse(event: WheelEvent) {
-  zoomCanvas(event.deltaY);
+  zoomCanvas(event.deltaY, {
+    x: event.pageX,
+    y: event.pageY,
+  });
   editorLayer.redrawCanvas();
 }
 
@@ -1041,7 +1050,7 @@ function mouseClickUI(id: string) {
           true;
       }
 
-      if (drawUtils.theme == 0) {
+      if (drawUtils.theme == 1) {
         (document.getElementById("toggleTheme") as HTMLInputElement).checked =
           true;
       }
@@ -1462,7 +1471,7 @@ function buildOverlays() {
     id: "toggleTheme",
     type: "toggle",
     title: "Theme",
-    string: ["Light", "Dark"],
+    string: ["Dark", "Light"],
     change: toggleTheme,
   });
 

@@ -165,6 +165,15 @@ export class EditorLayer {
     this.offsetY += moveY;
   }
 
+  public panTowards(prevZoom: number, nextZoom: number, mouseX: number, mouseY: number) {
+    mouseX -= this.offsetX;
+    mouseY -= this.offsetY;
+    const zoomDiff = nextZoom / prevZoom;
+    const newMouseX = mouseX * zoomDiff;
+    const newMouseY = mouseY * zoomDiff;
+    this.panCanvas(mouseX - newMouseX, mouseY - newMouseY);
+  }
+
   public panCenter() {
     this.offsetX =
       this.canvas.width / 2 - this.swatches.patternSwatch.canvas.width / 2;
