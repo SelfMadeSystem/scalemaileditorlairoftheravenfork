@@ -129,8 +129,8 @@ export class DrawUtils {
     context.fill("nonzero");
 
     // Draw Dots
-    for (let y = backgroundOriginY; y < editorLayer.height; y+=stepY) {
-      for (let x = backgroundOriginX; x < editorLayer.width; x+=stepX) {
+    for (let y = backgroundOriginY; y < editorLayer.height + stepY; y += stepY) {
+      for (let x = backgroundOriginX; x < editorLayer.width + stepY; x += stepX) {
         const draw: Pos = {
           x: Math.round(x),
           y: Math.round(y),
