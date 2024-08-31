@@ -25,6 +25,7 @@ import { TemplateSwatches } from "./TemplateSwatches";
 import { ImageMatrix } from "./ImageStuff";
 import { Pos, posAdd, posDistSq } from "./utils";
 import { Swatch } from "./Swatch";
+import { EditorLayer } from "./EditorLayer";
 
 // Variables ==========================================================================================================
 const imageLoader = new ImageLoader(startDesigner);
@@ -39,17 +40,14 @@ const drawUtils = new DrawUtils(imageLoader);
 // Swatch Variables
 const swatches = new TemplateSwatches(palette, drawUtils);
 
-// Canvases
-const backgroundCanvas = document.getElementById(
-  "canvasBackground"
-) as HTMLCanvasElement;
-const backgroundContext = backgroundCanvas.getContext("2d")!;
+// Pattern Variables
+const editorPattern = new PatternMatrix();
 
 const interactionLayer = document.getElementById(
   "canvasWrapper"
 ) as HTMLDivElement;
 
-const editorLayer = new EntityLayer("canvasEditor", drawUtils, swatches);
+const editorLayer = new EditorLayer(drawUtils, swatches, editorPattern);
 const uiLayer = new EntityLayer("canvasUI", drawUtils, swatches);
 const photoLayer = new EntityLayer(
   {
@@ -70,9 +68,6 @@ var panKey = false;
 
 // Overlay Variables
 const splashText = document.getElementById("splashText")!;
-
-// Pattern Variables
-const editorPattern = new PatternMatrix();
 
 // Ruler Variables
 var rulerUnits: keyof typeof rulerUnitData = "metric";
@@ -541,16 +536,6 @@ function checkRadio(radios: NodeListOf<HTMLInputElement>) {
 // Interaction Functions ==============================================================================================
 // Window Resize
 function scaleCanvases() {
-  const height = window.innerHeight;
-  const width = window.innerWidth;
-  backgroundCanvas.style.height = height + "px";
-  backgroundCanvas.style.width = width + "px";
-
-  backgroundCanvas.height = height;
-  backgroundCanvas.width = width;
-
-  drawBg();
-
   editorLayer.scaleCanvas();
   editorLayer.redrawCanvas();
 
@@ -583,7 +568,6 @@ function zoomCanvas(scroll: number) {
   drawUtils.updateScaleVariables(drawUtils.scaleRadius);
   swatches.regenerateSwatches(editorPattern);
 
-  drawBg();
   editorLayer.redrawCanvas();
 }
 
@@ -616,14 +600,6 @@ function zoomExtents(sourcePattern: PatternMatrix) {
 function zoomReset() {
   drawUtils.scaleRadius = 75;
   zoomCanvas(0);
-}
-
-function drawBg() {
-  drawUtils.drawBackgroundDots(
-    backgroundContext,
-    editorPattern,
-    editorLayer
-  );
 }
 
 // Mouse Functions ====================================================================================================
@@ -725,16 +701,8 @@ function mouseHandler(event: MouseEvent) {
     if (currentTool != "cameraPan") {
       const patternHeight = editorPattern.height;
       const patternWidth = editorPattern.width;
-      const patternX = Math.round(
-        editorLayer.centerX -
-          editorLayer.entities[0].imageCanvas!.width / 2 +
-          editorLayer.offsetX
-      );
-      const patternY = Math.round(
-        editorLayer.centerY -
-          editorLayer.entities[0].imageCanvas!.height / 2 +
-          editorLayer.offsetY
-      );
+      const canvasX = Math.round(editorLayer.offsetX);
+      const canvasY = Math.round(editorLayer.offsetY);
 
       var sHalf = 0;
 
@@ -759,8 +727,8 @@ function mouseHandler(event: MouseEvent) {
             const scaleX = Math.round(sHalf + drawUtils.scaleSpacingX * x);
             const scaleY = Math.round(drawUtils.scaleSpacingY * y);
 
-            const pxX = patternX + scaleX;
-            const pxY = patternY + scaleY;
+            const pxX = canvasX + scaleX;
+            const pxY = canvasY + scaleY;
 
             if (
               pxX > windowEdgeL &&
@@ -809,7 +777,6 @@ function mouseHandler(event: MouseEvent) {
           event.pageY - panCenterY
         );
         editorLayer.redrawCanvas();
-        drawBg();
 
         panCenterX = event.pageX;
         panCenterY = event.pageY;
@@ -906,10 +873,10 @@ function mouseDownEditor(y: number, x: number, b: number) {
     switch (currentTool) {
       case "toolboxCursor":
       case "toolboxBrush":
-        editorPattern.colourScale(y, x, activeColour, true);
+        editorPattern.colourScale(y, x, activeColour, editorLayer);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        drawBg();
+
         break;
 
       //case "toolboxColumnInsert":
@@ -920,20 +887,20 @@ function mouseDownEditor(y: number, x: number, b: number) {
         editorPattern.fillRow(y, activeColour);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        drawBg();
+
         break;
       case "toolboxFillColumn":
         editorPattern.fillColumn(x, y, activeColour);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        drawBg();
+
         break;
       case "toolboxFillColour":
         editorPattern.fill(y, x, activeColour);
-        editorPattern.colourScale(y, x, activeColour, false);
+        editorPattern.colourScale(y, x, activeColour);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        drawBg();
+
         break;
       //case "toolboxRowInsert":
       //case "toolboxRowRemove":
@@ -943,11 +910,10 @@ function mouseDownEditor(y: number, x: number, b: number) {
         editorPattern.replaceAll(editorPattern.getColour(y, x), activeColour);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        drawBg();
+
         break;
 
       default:
-        drawBg();
         console.log(
           "Sorry, the " + currentTool + " hasn't been implemented yet."
         );
@@ -968,10 +934,9 @@ function mouseHoverEditor(y: number, x: number, b: number) {
       case "toolboxBrush":
         setCursor("Brush");
         if (clicked) {
-          editorPattern.colourScale(y, x, activeColour, true);
+          editorPattern.colourScale(y, x, activeColour, editorLayer);
           swatches.generatePatternSwatch(editorPattern);
           editorLayer.redrawCanvas();
-          drawBg();
         }
         break;
 
@@ -1017,7 +982,7 @@ function mouseClickUI(id: string) {
     case "cameraCenter":
       editorLayer.panReset();
       editorLayer.redrawCanvas();
-      drawBg();
+
       break;
 
     case "cameraExtents":
@@ -1751,7 +1716,6 @@ function newFromShape() {
   overlayInterface.hideOverlay();
   swatches.generatePatternSwatch(editorPattern);
   editorLayer.redrawCanvas();
-  drawBg();
 }
 
 function patternShapeSquare(target: PatternMatrix, colour: number) {
@@ -1862,20 +1826,10 @@ function startDesigner() {
   swatches.regenerateSwatches(editorPattern);
 
   // Editor
-  let nEnt = new Entity();
-  nEnt.id = "memoryEditor";
-  nEnt.shape = "canvas";
-  nEnt.imageCanvas = swatches.patternSwatch.canvas;
-  nEnt.originX = 0;
-  nEnt.originY = 0;
-  editorLayer.addEntity(nEnt);
-
   editorLayer.redrawCanvas();
 
   // Background
   splashText.innerHTML = "Adding layers of complexity...";
-
-  drawBg();
 
   // UI
   setupInterface();
@@ -1978,7 +1932,6 @@ function toggleTheme() {
     themes[drawUtils.theme].overlayColour
   );
 
-  drawBg();
   createInterface();
   uiLayer.redrawCanvas();
 }

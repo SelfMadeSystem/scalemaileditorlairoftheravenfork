@@ -1,3 +1,4 @@
+import { EditorLayer } from "./EditorLayer";
 import { Scale } from "./Scale";
 
 export class PatternMatrix {
@@ -178,9 +179,9 @@ export class PatternMatrix {
   }
 
   // Scale Functions
-  colourScale(y: number, x: number, colour: number, expand = false) {
+  colourScale(y: number, x: number, colour: number, editorLayer?: EditorLayer) {
     // Auto Expand Pattern
-    if (expand === true) {
+    if (editorLayer) {
       var height = this.height;
       var width = this.width;
 
@@ -191,15 +192,20 @@ export class PatternMatrix {
           this.fillRow(0, 1);
           this.getSize();
 
+          editorLayer.bgOffsetY -= 1;
+          editorLayer.offsetY -= editorLayer.drawUtils.scaleSpacingY;
+
           y += 1;
         } else if (y == height - 1) {
           this.addRow(height);
           this.fillRow(height, 1);
+          editorLayer.bgOffsetY -= 1;
           this.getSize();
         }
 
         if (x == 0) {
           this.addColumn(1, 0);
+          editorLayer.offsetX -= editorLayer.drawUtils.scaleSpacingX;
 
           x += 1;
         } else if (x == width - 1 && this.matrix[y][0].colour != 0) {
