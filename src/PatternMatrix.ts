@@ -199,7 +199,6 @@ export class PatternMatrix {
         } else if (y == height - 1) {
           this.addRow(height);
           this.fillRow(height, 1);
-          editorLayer.bgOffsetY -= 1;
           this.getSize();
         }
 

@@ -18,7 +18,7 @@ import { UiButton } from "./ui/UiButton";
 import { UiSection } from "./ui/UiSection";
 import { DrawUtils } from "./DrawUtils";
 import { EntityLayer } from "./EntityLayer";
-import { fontStyles, rulerSizeData, rulerUnitData } from "./Consts";
+import { fontStyles } from "./Consts";
 import { uiIconSize, uiOffsetX, uiOffsetY } from "./ui";
 import { PatternMatrix } from "./PatternMatrix";
 import { TemplateSwatches } from "./TemplateSwatches";
@@ -68,10 +68,6 @@ var panKey = false;
 
 // Overlay Variables
 const splashText = document.getElementById("splashText")!;
-
-// Ruler Variables
-var rulerUnits: keyof typeof rulerUnitData = "metric";
-var rulerSize: keyof typeof rulerSizeData = "large";
 
 // UI Variables
 var uiToolbox = new UiSection();
@@ -1041,11 +1037,6 @@ function mouseClickUI(id: string) {
     case "toolboxSettings":
       setOverlay("settings");
 
-      if (rulerSize == "large") {
-        (document.getElementById("toggleSize") as HTMLInputElement).checked =
-          true;
-      }
-
       if (drawUtils.drawEmpty === true) {
         (document.getElementById("toggleEmpty") as HTMLInputElement).checked =
           true;
@@ -1056,8 +1047,8 @@ function mouseClickUI(id: string) {
           true;
       }
 
-      if (rulerUnits == "metric") {
-        (document.getElementById("toggleUnits") as HTMLInputElement).checked =
+      if (editorLayer.drawBg === true) {
+        (document.getElementById("toggleBackground") as HTMLInputElement).checked =
           true;
       }
 
@@ -1457,15 +1448,6 @@ function buildOverlays() {
   });
 
   // Pane
-  // Scale Size
-  nWindow.addObjectToPane({
-    id: "toggleSize",
-    type: "toggle",
-    title: "Scale Size",
-    string: ["Small", "Large"],
-    change: toggleSize,
-  });
-
   // Show Empty Scales
   nWindow.addObjectToPane({
     id: "toggleEmpty",
@@ -1484,13 +1466,13 @@ function buildOverlays() {
     change: toggleTheme,
   });
 
-  // Units
+  // Background
   nWindow.addObjectToPane({
-    id: "toggleUnits",
+    id: "toggleBackground",
     type: "toggle",
-    title: "Measurement Units",
-    string: ["Imperial", "Metric"],
-    change: toggleUnits,
+    title: "Background",
+    string: ["Off", "On"],
+    change: toggleBackground,
   });
 
   overlayInterface.addScreen(nWindow);
@@ -1886,17 +1868,6 @@ function toggleEmpty() {
   editorLayer.redrawCanvas();
 }
 
-function toggleSize() {
-  if (rulerSize == "large") {
-    rulerSize = "small";
-  } else {
-    rulerSize = "large";
-  }
-
-  createInterface();
-  uiLayer.redrawCanvas();
-}
-
 function toggleTheme() {
   if (drawUtils.theme == 0) {
     drawUtils.theme = 1;
@@ -1936,15 +1907,9 @@ function toggleTheme() {
   uiLayer.redrawCanvas();
 }
 
-function toggleUnits() {
-  if (rulerUnits == "metric") {
-    rulerUnits = "imperial";
-  } else {
-    rulerUnits = "metric";
-  }
-
-  createInterface();
-  uiLayer.redrawCanvas();
+function toggleBackground() {
+  editorLayer.drawBg = !editorLayer.drawBg;
+  editorLayer.redrawCanvas();
 }
 
 // User Interface Functions ===========================================================================================
@@ -2368,17 +2333,7 @@ function createPalette(target: EntityLayer) {
 
 function createData(target: EntityLayer, pattern: PatternMatrix) {
   // Variables
-  var pHeight = pattern.physicalHeight;
-  var pWidth = pattern.physicalWidth;
   var pData;
-
-  var mHeight = 0;
-  var mWidth = 0;
-  var mFraction = "";
-
-  var wScales = 0;
-  var wRings = 0;
-  var wTotal = 0;
 
   var output: [number, string][] = [];
 
@@ -2407,80 +2362,6 @@ function createData(target: EntityLayer, pattern: PatternMatrix) {
       sCount += pData[x][1];
     }
   }
-
-  // Physical Height and Width
-  output.push([0, "Pattern Size"]);
-
-  // Width
-  mWidth =
-    pWidth * rulerSizeData[rulerSize].width +
-    (pWidth - 1) * rulerSizeData[rulerSize].gapH;
-  mWidth *= rulerUnitData[rulerUnits].multiSize;
-
-  if (rulerUnits == "imperial") {
-    mFraction = " " + inchesFraction(mWidth);
-    mWidth = Math.floor(mWidth);
-  }
-
-  output.push([
-    1,
-    "~" + mWidth + rulerUnitData[rulerUnits].unitSize + mFraction + " wide",
-  ]);
-
-  // Height
-  mHeight =
-    (pHeight - 1) * rulerSizeData[rulerSize].gapV +
-    rulerSizeData[rulerSize].height;
-  mHeight *= rulerUnitData[rulerUnits].multiSize;
-
-  if (rulerUnits == "imperial") {
-    mFraction = " " + inchesFraction(mHeight);
-    mHeight = Math.floor(mHeight);
-  }
-
-  output.push([
-    1,
-    "~" + mHeight + rulerUnitData[rulerUnits].unitSize + mFraction + " high",
-  ]);
-
-  // Physical Weight
-  output.push([0, "Pattern Weight"]);
-
-  wScales =
-    sCount *
-    rulerSizeData[rulerSize].weightS *
-    rulerUnitData[rulerUnits].multiWeight;
-  wRings =
-    sCount *
-    rulerSizeData[rulerSize].weightR *
-    2 *
-    rulerUnitData[rulerUnits].multiWeight;
-  wTotal = wScales + wRings;
-
-  const sScales = wScales.toFixed(2);
-  const sRings = wRings.toFixed(2);
-  const sTotal = wTotal.toFixed(2);
-
-  output.push([
-    1,
-    sCount +
-      " Scales (~" +
-      sScales +
-      rulerUnitData[rulerUnits].unitWeight +
-      ")",
-  ]);
-  output.push([
-    1,
-    sCount * 2 +
-      " Rings (~" +
-      sRings +
-      rulerUnitData[rulerUnits].unitWeight +
-      ")",
-  ]);
-  output.push([
-    1,
-    "~" + sTotal + rulerUnitData[rulerUnits].unitWeight + " Total",
-  ]);
 
   // Create Entities
   y = output.length;
@@ -2522,10 +2403,6 @@ function createData(target: EntityLayer, pattern: PatternMatrix) {
 
     target.addEntity(nEnt);
   }
-}
-
-function inchesFraction(v: number) {
-  return Math.floor(16 * (v % 1)) + "/16ths";
 }
 
 drawUtils.imageAssets.loadImages();

@@ -3,7 +3,6 @@ import { DrawUtils } from "./DrawUtils";
 import { PatternMatrix } from "./PatternMatrix";
 import { TemplateSwatches } from "./TemplateSwatches";
 import { themes } from "./Theme";
-import { arcFill, Pos } from "./utils";
 
 export class EditorLayer {
   public bgCanvas: HTMLCanvasElement;
@@ -20,11 +19,12 @@ export class EditorLayer {
   public offsetY = 0;
   public bgOffsetY = 0;
   public reverse = false;
+  public drawBg = false;
 
   constructor(
     public drawUtils: DrawUtils,
     private swatches: TemplateSwatches,
-    private editorPattern: PatternMatrix
+    public editorPattern: PatternMatrix
   ) {
     this.bgCanvas = document.getElementById(
       "canvasBackground"
@@ -73,7 +73,7 @@ export class EditorLayer {
     if (diff > updateInterval) {
       this.lastDraw = now;
       this.drawScales();
-      this.drawBackgroundDots();
+      this.drawBackground();
     } else {
       var that = this;
 
@@ -97,16 +97,18 @@ export class EditorLayer {
     );
   }
 
-  public drawBackgroundDots() {
+  public drawBackground() {
     const context = this.bgContext;
-    const pattern = this.editorPattern;
+    // const pattern = this.editorPattern;
     context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+    if (!this.drawBg) {
+      return;
+    }
+
     const colour = themes[this.drawUtils.theme].dotColour;
 
     // Variables
     var m = 0;
-    var x = 0;
-    var y = 0;
 
     var backgroundOriginX = 0;
     var backgroundOriginY = 0;
@@ -117,45 +119,44 @@ export class EditorLayer {
     const dot = Math.max(1, this.drawUtils.scaleRadius / 30);
 
     // Calculate Bottom Left Scale
-    if (pattern.matrix[pattern.matrix.length - 1][0].colour == 0) {
-      m = this.drawUtils.scaleSpacingX / 2;
-    }
+    // if (pattern.matrix[pattern.matrix.length - 1][0].colour == 0) {
+    //   m = this.drawUtils.scaleSpacingX / 2;
+    // }
 
     backgroundOriginX = -dot * 1.5 + this.drawUtils.scaleSpacingX + m;
-    backgroundOriginY = this.bgOffsetY * stepY / 2 + this.drawUtils.scalePathBottom.y;
+    backgroundOriginY =
+      (this.bgOffsetY * stepY) / 2 + this.drawUtils.scalePathBottom.y;
 
     // Calculate Pan Offset
     backgroundOriginX += this.offsetX;
     backgroundOriginY += this.offsetY;
 
     // Step Back to Edge
-    for (x = 0; backgroundOriginX > 0; x++) {
+    for (let x = 0; backgroundOriginX > 0; x++) {
       backgroundOriginX -= stepX;
     }
 
-    for (y = 0; backgroundOriginY > 0; y++) {
+    for (let y = 0; backgroundOriginY > 0; y++) {
       backgroundOriginY -= stepY;
     }
 
-    context.fillStyle = colour;
-    context.fill("nonzero");
+    context.strokeStyle = colour;
 
     // Draw Dots
+    context.beginPath();
     for (let y = backgroundOriginY; y < this.height + stepY; y += stepY) {
-      for (let x = backgroundOriginX; x < this.width + stepY; x += stepX) {
-        const draw: Pos = {
-          x: Math.round(x),
-          y: Math.round(y),
-        };
-
-        arcFill(context, draw, dot);
-
-        draw.x += Math.round(this.drawUtils.scaleSpacingX / 2);
-        draw.y -= Math.round(this.drawUtils.scaleSpacingY);
-
-        arcFill(context, draw, dot);
-      }
+      const ry = Math.round(y);
+      context.moveTo(0, ry);
+      context.lineTo(context.canvas.width, ry);
     }
+    context.stroke();
+    context.beginPath();
+    for (let x = backgroundOriginX; x < this.width + stepY; x += stepX) {
+      const rx = Math.round(x);
+      context.moveTo(rx, 0);
+      context.lineTo(rx, context.canvas.height);
+    }
+    context.stroke();
   }
 
   // Pan Functions
