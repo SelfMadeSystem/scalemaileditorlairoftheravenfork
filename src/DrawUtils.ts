@@ -1,11 +1,10 @@
 import { fontStyles } from "./Consts";
 import Entity from "./Entity";
-import { EntityLayer } from "./EntityLayer";
 import ImageLoader from "./ImageLoader";
 import { TemplateSwatches } from "./TemplateSwatches";
 import { themes } from "./Theme";
 import { uiIconSize } from "./ui";
-import { arc, arcFill, findCircle, Pos } from "./utils";
+import { arc, findCircle, Pos } from "./utils";
 
 export class DrawUtils {
   public theme: 0 | 1 = 0;
@@ -79,71 +78,6 @@ export class DrawUtils {
     // divide by 2 because `radius` refers to the outer radius which is equal to
     // the inner diameter, so divide by 2 to get the inner radius
     this.scaleHole = (radius * this.scaleRatioHole) / 2;
-  }
-
-  public drawBackgroundDots(
-    context: CanvasRenderingContext2D,
-    pattern: any,
-    editorLayer: EntityLayer
-  ) {
-    context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-    const colour = themes[this.theme].dotColour;
-
-    // Variables
-    var h = editorLayer.entities[0].imageCanvas!.height / 2;
-    var w = editorLayer.entities[0].imageCanvas!.width / 2;
-    var m = 0;
-    var x = 0;
-    var y = 0;
-
-    var backgroundOriginX = 0;
-    var backgroundOriginY = 0;
-
-    var stepX = this.scaleSpacingX;
-    var stepY = this.scaleSpacingY * 2;
-
-    const dot = Math.max(1, this.scaleRadius / 30);
-
-    // Calculate Bottom Left Scale
-    if (pattern.matrix[pattern.matrix.length - 1][0].colour == 0) {
-      m = this.scaleSpacingX / 2;
-    }
-
-    backgroundOriginX = editorLayer.centerX - w - dot + this.scaleSpacingX + m;
-    backgroundOriginY = editorLayer.centerY + h - dot * 1.5;
-
-    // Calculate Pan Offset
-    backgroundOriginX += editorLayer.offsetX;
-    backgroundOriginY += editorLayer.offsetY;
-
-    // Step Back to Edge
-    for (x = 0; backgroundOriginX > 0; x++) {
-      backgroundOriginX -= stepX;
-    }
-
-    for (y = 0; backgroundOriginY > 0; y++) {
-      backgroundOriginY -= stepY;
-    }
-
-    context.fillStyle = colour;
-    context.fill("nonzero");
-
-    // Draw Dots
-    for (let y = backgroundOriginY; y < editorLayer.height + stepY; y += stepY) {
-      for (let x = backgroundOriginX; x < editorLayer.width + stepY; x += stepX) {
-        const draw: Pos = {
-          x: Math.round(x),
-          y: Math.round(y),
-        };
-
-        arcFill(context, draw, dot);
-
-        draw.x += Math.round(this.scaleSpacingX / 2);
-        draw.y -= Math.round(this.scaleSpacingY);
-
-        arcFill(context, draw, dot);
-      }
-    }
   }
 
   public drawImg(

@@ -4,7 +4,7 @@ export const themes: ThemeStyle[] = [
     fontColour: "#ffffff",
 
     backgroundColour: "#171717",
-    dotColour: "#9c9c9c",
+    dotColour: "#9c9c9c99",
     overlayColour: "#4e4e4e",
 
     toggleColour: "#e8e8e8",
@@ -18,7 +18,7 @@ export const themes: ThemeStyle[] = [
     fontColour: "#000000",
 
     backgroundColour: "#e8e8e8",
-    dotColour: "#636363",
+    dotColour: "#63636399",
     overlayColour: "#b1b1b1",
 
     toggleColour: "#171717",

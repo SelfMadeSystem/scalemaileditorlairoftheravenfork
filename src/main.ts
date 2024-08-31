@@ -18,13 +18,14 @@ import { UiButton } from "./ui/UiButton";
 import { UiSection } from "./ui/UiSection";
 import { DrawUtils } from "./DrawUtils";
 import { EntityLayer } from "./EntityLayer";
-import { fontStyles, rulerSizeData, rulerUnitData } from "./Consts";
+import { fontStyles } from "./Consts";
 import { uiIconSize, uiOffsetX, uiOffsetY } from "./ui";
 import { PatternMatrix } from "./PatternMatrix";
 import { TemplateSwatches } from "./TemplateSwatches";
 import { ImageMatrix } from "./ImageStuff";
 import { Pos, posAdd, posDistSq } from "./utils";
 import { Swatch } from "./Swatch";
+import { EditorLayer } from "./EditorLayer";
 
 // Variables ==========================================================================================================
 const imageLoader = new ImageLoader(startDesigner);
@@ -39,17 +40,14 @@ const drawUtils = new DrawUtils(imageLoader);
 // Swatch Variables
 const swatches = new TemplateSwatches(palette, drawUtils);
 
-// Canvases
-const backgroundCanvas = document.getElementById(
-  "canvasBackground"
-) as HTMLCanvasElement;
-const backgroundContext = backgroundCanvas.getContext("2d")!;
+// Pattern Variables
+const editorPattern = new PatternMatrix();
 
 const interactionLayer = document.getElementById(
   "canvasWrapper"
 ) as HTMLDivElement;
 
-const editorLayer = new EntityLayer("canvasEditor", drawUtils, swatches);
+const editorLayer = new EditorLayer(drawUtils, swatches, editorPattern);
 const uiLayer = new EntityLayer("canvasUI", drawUtils, swatches);
 const photoLayer = new EntityLayer(
   {
@@ -70,13 +68,6 @@ var panKey = false;
 
 // Overlay Variables
 const splashText = document.getElementById("splashText")!;
-
-// Pattern Variables
-const editorPattern = new PatternMatrix();
-
-// Ruler Variables
-var rulerUnits: keyof typeof rulerUnitData = "metric";
-var rulerSize: keyof typeof rulerSizeData = "large";
 
 // UI Variables
 var uiToolbox = new UiSection();
@@ -541,16 +532,6 @@ function checkRadio(radios: NodeListOf<HTMLInputElement>) {
 // Interaction Functions ==============================================================================================
 // Window Resize
 function scaleCanvases() {
-  const height = window.innerHeight;
-  const width = window.innerWidth;
-  backgroundCanvas.style.height = height + "px";
-  backgroundCanvas.style.width = width + "px";
-
-  backgroundCanvas.height = height;
-  backgroundCanvas.width = width;
-
-  drawBg();
-
   editorLayer.scaleCanvas();
   editorLayer.redrawCanvas();
 
@@ -560,11 +541,13 @@ function scaleCanvases() {
 }
 
 // Zooming Functions
-function zoomCanvas(scroll: number) {
+function zoomCanvas(scroll: number, mouse?: Pos) {
   const scrollSpeed = scroll;
   const zoomFactor = 1.1;
   const minScale = 15;
   const maxScale = 150;
+
+  const ogZoom = drawUtils.scaleRadius;
 
   if (scrollSpeed > 0) {
     // Zoom Out
@@ -572,7 +555,7 @@ function zoomCanvas(scroll: number) {
       drawUtils.scaleRadius /= Math.pow(zoomFactor, scrollSpeed / 100);
       drawUtils.scaleRadius = Math.max(drawUtils.scaleRadius, minScale);
     }
-  } else {
+  } else if (scrollSpeed < 0) {
     // Zoom In
     if (drawUtils.scaleRadius < maxScale) {
       drawUtils.scaleRadius *= Math.pow(zoomFactor, -scrollSpeed / 100);
@@ -580,15 +563,20 @@ function zoomCanvas(scroll: number) {
     }
   }
 
+  if (mouse) {
+    editorLayer.panTowards(ogZoom, drawUtils.scaleRadius, mouse.x, mouse.y);
+  }
+
   drawUtils.updateScaleVariables(drawUtils.scaleRadius);
   swatches.regenerateSwatches(editorPattern);
-
-  drawBg();
-  editorLayer.redrawCanvas();
 }
 
 function zoomCanvasMouse(event: WheelEvent) {
-  zoomCanvas(event.deltaY);
+  zoomCanvas(event.deltaY, {
+    x: event.pageX,
+    y: event.pageY,
+  });
+  editorLayer.redrawCanvas();
 }
 
 function zoomExtents(sourcePattern: PatternMatrix) {
@@ -608,22 +596,14 @@ function zoomExtents(sourcePattern: PatternMatrix) {
     drawUtils.scaleRadius *= extHeight;
   }
 
-  editorLayer.panReset();
   zoomCanvas(1);
+  editorLayer.panCenter();
   editorLayer.redrawCanvas();
 }
 
 function zoomReset() {
   drawUtils.scaleRadius = 75;
   zoomCanvas(0);
-}
-
-function drawBg() {
-  drawUtils.drawBackgroundDots(
-    backgroundContext,
-    editorPattern,
-    editorLayer
-  );
 }
 
 // Mouse Functions ====================================================================================================
@@ -725,16 +705,8 @@ function mouseHandler(event: MouseEvent) {
     if (currentTool != "cameraPan") {
       const patternHeight = editorPattern.height;
       const patternWidth = editorPattern.width;
-      const patternX = Math.round(
-        editorLayer.centerX -
-          editorLayer.entities[0].imageCanvas!.width / 2 +
-          editorLayer.offsetX
-      );
-      const patternY = Math.round(
-        editorLayer.centerY -
-          editorLayer.entities[0].imageCanvas!.height / 2 +
-          editorLayer.offsetY
-      );
+      const canvasX = Math.round(editorLayer.offsetX);
+      const canvasY = Math.round(editorLayer.offsetY);
 
       var sHalf = 0;
 
@@ -759,8 +731,8 @@ function mouseHandler(event: MouseEvent) {
             const scaleX = Math.round(sHalf + drawUtils.scaleSpacingX * x);
             const scaleY = Math.round(drawUtils.scaleSpacingY * y);
 
-            const pxX = patternX + scaleX;
-            const pxY = patternY + scaleY;
+            const pxX = canvasX + scaleX;
+            const pxY = canvasY + scaleY;
 
             if (
               pxX > windowEdgeL &&
@@ -809,7 +781,6 @@ function mouseHandler(event: MouseEvent) {
           event.pageY - panCenterY
         );
         editorLayer.redrawCanvas();
-        drawBg();
 
         panCenterX = event.pageX;
         panCenterY = event.pageY;
@@ -906,10 +877,10 @@ function mouseDownEditor(y: number, x: number, b: number) {
     switch (currentTool) {
       case "toolboxCursor":
       case "toolboxBrush":
-        editorPattern.colourScale(y, x, activeColour, true);
+        editorPattern.colourScale(y, x, activeColour, editorLayer);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        drawBg();
+
         break;
 
       //case "toolboxColumnInsert":
@@ -920,20 +891,20 @@ function mouseDownEditor(y: number, x: number, b: number) {
         editorPattern.fillRow(y, activeColour);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        drawBg();
+
         break;
       case "toolboxFillColumn":
         editorPattern.fillColumn(x, y, activeColour);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        drawBg();
+
         break;
       case "toolboxFillColour":
         editorPattern.fill(y, x, activeColour);
-        editorPattern.colourScale(y, x, activeColour, false);
+        editorPattern.colourScale(y, x, activeColour);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        drawBg();
+
         break;
       //case "toolboxRowInsert":
       //case "toolboxRowRemove":
@@ -943,11 +914,10 @@ function mouseDownEditor(y: number, x: number, b: number) {
         editorPattern.replaceAll(editorPattern.getColour(y, x), activeColour);
         swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
-        drawBg();
+
         break;
 
       default:
-        drawBg();
         console.log(
           "Sorry, the " + currentTool + " hasn't been implemented yet."
         );
@@ -968,10 +938,9 @@ function mouseHoverEditor(y: number, x: number, b: number) {
       case "toolboxBrush":
         setCursor("Brush");
         if (clicked) {
-          editorPattern.colourScale(y, x, activeColour, true);
+          editorPattern.colourScale(y, x, activeColour, editorLayer);
           swatches.generatePatternSwatch(editorPattern);
           editorLayer.redrawCanvas();
-          drawBg();
         }
         break;
 
@@ -1015,9 +984,9 @@ function mouseClickUI(id: string) {
   switch (id) {
     // Camera Controls
     case "cameraCenter":
-      editorLayer.panReset();
+      editorLayer.panCenter();
       editorLayer.redrawCanvas();
-      drawBg();
+
       break;
 
     case "cameraExtents":
@@ -1029,8 +998,8 @@ function mouseClickUI(id: string) {
       break;
 
     case "cameraReset":
-      editorLayer.panReset();
       zoomReset();
+      editorLayer.panCenter();
       editorLayer.redrawCanvas();
       break;
 
@@ -1076,24 +1045,20 @@ function mouseClickUI(id: string) {
     case "toolboxSettings":
       setOverlay("settings");
 
-      if (rulerSize == "large") {
-        (document.getElementById("toggleSize") as HTMLInputElement).checked =
-          true;
-      }
-
       if (drawUtils.drawEmpty === true) {
         (document.getElementById("toggleEmpty") as HTMLInputElement).checked =
           true;
       }
 
-      if (drawUtils.theme == 0) {
+      if (drawUtils.theme == 1) {
         (document.getElementById("toggleTheme") as HTMLInputElement).checked =
           true;
       }
 
-      if (rulerUnits == "metric") {
-        (document.getElementById("toggleUnits") as HTMLInputElement).checked =
-          true;
+      if (editorLayer.drawBg === true) {
+        (
+          document.getElementById("toggleBackground") as HTMLInputElement
+        ).checked = true;
       }
 
       overlayInterface.showOverlay();
@@ -1492,15 +1457,6 @@ function buildOverlays() {
   });
 
   // Pane
-  // Scale Size
-  nWindow.addObjectToPane({
-    id: "toggleSize",
-    type: "toggle",
-    title: "Scale Size",
-    string: ["Small", "Large"],
-    change: toggleSize,
-  });
-
   // Show Empty Scales
   nWindow.addObjectToPane({
     id: "toggleEmpty",
@@ -1515,17 +1471,17 @@ function buildOverlays() {
     id: "toggleTheme",
     type: "toggle",
     title: "Theme",
-    string: ["Light", "Dark"],
+    string: ["Dark", "Light"],
     change: toggleTheme,
   });
 
-  // Units
+  // Background
   nWindow.addObjectToPane({
-    id: "toggleUnits",
+    id: "toggleBackground",
     type: "toggle",
-    title: "Measurement Units",
-    string: ["Imperial", "Metric"],
-    change: toggleUnits,
+    title: "Background",
+    string: ["Off", "On"],
+    change: toggleBackground,
   });
 
   overlayInterface.addScreen(nWindow);
@@ -1751,7 +1707,6 @@ function newFromShape() {
   overlayInterface.hideOverlay();
   swatches.generatePatternSwatch(editorPattern);
   editorLayer.redrawCanvas();
-  drawBg();
 }
 
 function patternShapeSquare(target: PatternMatrix, colour: number) {
@@ -1862,20 +1817,10 @@ function startDesigner() {
   swatches.regenerateSwatches(editorPattern);
 
   // Editor
-  let nEnt = new Entity();
-  nEnt.id = "memoryEditor";
-  nEnt.shape = "canvas";
-  nEnt.imageCanvas = swatches.patternSwatch.canvas;
-  nEnt.originX = 0;
-  nEnt.originY = 0;
-  editorLayer.addEntity(nEnt);
-
   editorLayer.redrawCanvas();
 
   // Background
   splashText.innerHTML = "Adding layers of complexity...";
-
-  drawBg();
 
   // UI
   setupInterface();
@@ -1917,6 +1862,7 @@ function startDesigner() {
 
   swatches.patternSwatch.context.globalCompositeOperation = "source-over";
 
+  editorLayer.panCenter();
   scaleCanvases();
 }
 
@@ -1930,17 +1876,6 @@ function toggleEmpty() {
 
   swatches.regenerateSwatches(editorPattern);
   editorLayer.redrawCanvas();
-}
-
-function toggleSize() {
-  if (rulerSize == "large") {
-    rulerSize = "small";
-  } else {
-    rulerSize = "large";
-  }
-
-  createInterface();
-  uiLayer.redrawCanvas();
 }
 
 function toggleTheme() {
@@ -1978,20 +1913,13 @@ function toggleTheme() {
     themes[drawUtils.theme].overlayColour
   );
 
-  drawBg();
   createInterface();
   uiLayer.redrawCanvas();
 }
 
-function toggleUnits() {
-  if (rulerUnits == "metric") {
-    rulerUnits = "imperial";
-  } else {
-    rulerUnits = "metric";
-  }
-
-  createInterface();
-  uiLayer.redrawCanvas();
+function toggleBackground() {
+  editorLayer.drawBg = !editorLayer.drawBg;
+  editorLayer.redrawCanvas();
 }
 
 // User Interface Functions ===========================================================================================
@@ -2415,17 +2343,7 @@ function createPalette(target: EntityLayer) {
 
 function createData(target: EntityLayer, pattern: PatternMatrix) {
   // Variables
-  var pHeight = pattern.physicalHeight;
-  var pWidth = pattern.physicalWidth;
   var pData;
-
-  var mHeight = 0;
-  var mWidth = 0;
-  var mFraction = "";
-
-  var wScales = 0;
-  var wRings = 0;
-  var wTotal = 0;
 
   var output: [number, string][] = [];
 
@@ -2454,80 +2372,6 @@ function createData(target: EntityLayer, pattern: PatternMatrix) {
       sCount += pData[x][1];
     }
   }
-
-  // Physical Height and Width
-  output.push([0, "Pattern Size"]);
-
-  // Width
-  mWidth =
-    pWidth * rulerSizeData[rulerSize].width +
-    (pWidth - 1) * rulerSizeData[rulerSize].gapH;
-  mWidth *= rulerUnitData[rulerUnits].multiSize;
-
-  if (rulerUnits == "imperial") {
-    mFraction = " " + inchesFraction(mWidth);
-    mWidth = Math.floor(mWidth);
-  }
-
-  output.push([
-    1,
-    "~" + mWidth + rulerUnitData[rulerUnits].unitSize + mFraction + " wide",
-  ]);
-
-  // Height
-  mHeight =
-    (pHeight - 1) * rulerSizeData[rulerSize].gapV +
-    rulerSizeData[rulerSize].height;
-  mHeight *= rulerUnitData[rulerUnits].multiSize;
-
-  if (rulerUnits == "imperial") {
-    mFraction = " " + inchesFraction(mHeight);
-    mHeight = Math.floor(mHeight);
-  }
-
-  output.push([
-    1,
-    "~" + mHeight + rulerUnitData[rulerUnits].unitSize + mFraction + " high",
-  ]);
-
-  // Physical Weight
-  output.push([0, "Pattern Weight"]);
-
-  wScales =
-    sCount *
-    rulerSizeData[rulerSize].weightS *
-    rulerUnitData[rulerUnits].multiWeight;
-  wRings =
-    sCount *
-    rulerSizeData[rulerSize].weightR *
-    2 *
-    rulerUnitData[rulerUnits].multiWeight;
-  wTotal = wScales + wRings;
-
-  const sScales = wScales.toFixed(2);
-  const sRings = wRings.toFixed(2);
-  const sTotal = wTotal.toFixed(2);
-
-  output.push([
-    1,
-    sCount +
-      " Scales (~" +
-      sScales +
-      rulerUnitData[rulerUnits].unitWeight +
-      ")",
-  ]);
-  output.push([
-    1,
-    sCount * 2 +
-      " Rings (~" +
-      sRings +
-      rulerUnitData[rulerUnits].unitWeight +
-      ")",
-  ]);
-  output.push([
-    1,
-    "~" + sTotal + rulerUnitData[rulerUnits].unitWeight + " Total",
-  ]);
 
   // Create Entities
   y = output.length;
@@ -2569,10 +2413,6 @@ function createData(target: EntityLayer, pattern: PatternMatrix) {
 
     target.addEntity(nEnt);
   }
-}
-
-function inchesFraction(v: number) {
-  return Math.floor(16 * (v % 1)) + "/16ths";
 }
 
 drawUtils.imageAssets.loadImages();
