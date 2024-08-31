@@ -165,9 +165,10 @@ export class EditorLayer {
     this.offsetY += moveY;
   }
 
-  public panReset() {
-    this.offsetX = 0;
-    this.offsetY = 0;
-    this.panCanvas(0, 0);
+  public panCenter() {
+    this.offsetX =
+      this.canvas.width / 2 - this.swatches.patternSwatch.canvas.width / 2;
+    this.offsetY =
+      this.canvas.height / 2 - this.swatches.patternSwatch.canvas.height / 2;
   }
 }

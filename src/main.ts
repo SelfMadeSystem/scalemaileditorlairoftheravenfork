@@ -563,12 +563,11 @@ function zoomCanvas(scroll: number) {
 
   drawUtils.updateScaleVariables(drawUtils.scaleRadius);
   swatches.regenerateSwatches(editorPattern);
-
-  editorLayer.redrawCanvas();
 }
 
 function zoomCanvasMouse(event: WheelEvent) {
   zoomCanvas(event.deltaY);
+  editorLayer.redrawCanvas();
 }
 
 function zoomExtents(sourcePattern: PatternMatrix) {
@@ -588,8 +587,8 @@ function zoomExtents(sourcePattern: PatternMatrix) {
     drawUtils.scaleRadius *= extHeight;
   }
 
-  editorLayer.panReset();
   zoomCanvas(1);
+  editorLayer.panCenter();
   editorLayer.redrawCanvas();
 }
 
@@ -976,7 +975,7 @@ function mouseClickUI(id: string) {
   switch (id) {
     // Camera Controls
     case "cameraCenter":
-      editorLayer.panReset();
+      editorLayer.panCenter();
       editorLayer.redrawCanvas();
 
       break;
@@ -990,8 +989,8 @@ function mouseClickUI(id: string) {
       break;
 
     case "cameraReset":
-      editorLayer.panReset();
       zoomReset();
+      editorLayer.panCenter();
       editorLayer.redrawCanvas();
       break;
 
@@ -1048,8 +1047,9 @@ function mouseClickUI(id: string) {
       }
 
       if (editorLayer.drawBg === true) {
-        (document.getElementById("toggleBackground") as HTMLInputElement).checked =
-          true;
+        (
+          document.getElementById("toggleBackground") as HTMLInputElement
+        ).checked = true;
       }
 
       overlayInterface.showOverlay();
@@ -1853,6 +1853,7 @@ function startDesigner() {
 
   swatches.patternSwatch.context.globalCompositeOperation = "source-over";
 
+  editorLayer.panCenter();
   scaleCanvases();
 }
 
