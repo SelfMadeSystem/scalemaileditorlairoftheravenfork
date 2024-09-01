@@ -62,6 +62,8 @@ const photoLayer = new EntityLayer(
 const palettePicker = new PalettePicker(palette, swatches, () => {
   createInterface();
   uiLayer.redrawCanvas();
+  swatches.regenerateSwatches(editorPattern);
+  editorLayer.redrawCanvas();
 });
 document.body.appendChild(palettePicker);
 

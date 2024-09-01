@@ -92,14 +92,20 @@ export class PalettePicker extends LitElement {
     const random = "#" + r.toString(16) + g.toString(16) + b.toString(16);
     this.palette.addColour(new PaletteColour(random, r, g, b, 255));
     this.swatches.scaleSwatches.push(new Swatch());
-    this.swatches.generateScaleSwatches();
+    this.updateStuff();
+  }
 
+  updateStuff() {
+    this.swatches.generateScaleSwatches();
     this.onUpdate();
   }
 
   changeColor(i: number, r: number, g: number, b: number, a: number) {
     const c = this.palette.colours[i];
     a = Math.round(a * 255);
+    r = Math.round(r);
+    g = Math.round(g);
+    b = Math.round(b);
     if (c.r === r && c.g === g && c.b === b && c.a === a) return;
     c.r = r;
     c.g = g;
@@ -107,7 +113,7 @@ export class PalettePicker extends LitElement {
     c.a = a;
     c.color = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
     c.name = rgbaToHex(r, g, b, a);
-    this.onUpdate();
+    this.updateStuff();
   }
 
   onChangeColor(e: CustomEvent, i: number) {
