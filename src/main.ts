@@ -1009,10 +1009,14 @@ function mouseClickUI(id: string) {
 
     case "cameraZoomIn":
       zoomCanvas(-100);
+      editorLayer.panCenter();
+      editorLayer.redrawCanvas();
       break;
 
     case "cameraZoomOut":
       zoomCanvas(100);
+      editorLayer.panCenter();
+      editorLayer.redrawCanvas();
       break;
 
     // Toolbox Controls
