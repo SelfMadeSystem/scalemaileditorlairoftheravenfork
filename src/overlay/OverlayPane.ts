@@ -60,10 +60,12 @@ export function makeOverlayPane(
         button.classList.add("overlayButton");
         button.addEventListener("click", object.click);
 
-        const img = document.createElement("img");
-        img.src = imagePath + object.src + ".png";
-        img.alt = object.title ?? "";
-        button.append(img);
+        if (object.src !== undefined) {
+          const img = document.createElement("img");
+          img.src = imagePath + object.src + ".png";
+          img.alt = object.title ?? "";
+          button.append(img);
+        }
 
         const p = document.createElement("p");
         p.textContent = object.title;

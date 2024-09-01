@@ -10,7 +10,7 @@
 import "./style.css";
 import ImageLoader from "./ImageLoader";
 import Entity from "./Entity";
-import { ColourPalette, PaletteColour } from "./Palette";
+import { ColourPalette } from "./Palette";
 import { themes } from "./Theme";
 import { overlayInterface, setOverlay } from "./overlay/OverlayInterface";
 import { OverlayScreen } from "./overlay/OverlayScreen";
@@ -24,8 +24,8 @@ import { PatternMatrix } from "./PatternMatrix";
 import { TemplateSwatches } from "./TemplateSwatches";
 import { ImageMatrix } from "./ImageStuff";
 import { Pos, posAdd, posDistSq } from "./utils";
-import { Swatch } from "./Swatch";
 import { EditorLayer } from "./EditorLayer";
+import { PalettePicker } from "./palette-picker";
 
 // Variables ==========================================================================================================
 const imageLoader = new ImageLoader(startDesigner);
@@ -58,6 +58,12 @@ const photoLayer = new EntityLayer(
   drawUtils,
   swatches
 );
+
+const palettePicker = new PalettePicker(palette, swatches, () => {
+  createInterface();
+  uiLayer.redrawCanvas();
+});
+document.body.appendChild(palettePicker);
 
 // Interaction Variables
 var panCenterX = 0;
@@ -1461,6 +1467,13 @@ function buildOverlays() {
   });
 
   // Pane
+  nWindow.addObjectToPane({
+    type: "button",
+    title: "Open Palette Picker",
+    click: () => {
+      palettePicker.toggle();
+    },
+  });
   // Show Empty Scales
   nWindow.addObjectToPane({
     id: "toggleEmpty",
@@ -2421,17 +2434,3 @@ function createData(target: EntityLayer, pattern: PatternMatrix) {
 
 drawUtils.imageAssets.loadImages();
 window.addEventListener("resize", scaleCanvases);
-
-window.addEventListener("keydown", (e) => {
-  if (e.key === "m") {
-    const r = Math.floor(Math.random() * 256);
-    const g = Math.floor(Math.random() * 256);
-    const b = Math.floor(Math.random() * 256);
-    const random = "#" + r.toString(16) + g.toString(16) + b.toString(16);
-    palette.addColour(new PaletteColour(random, r, g, b, 255));
-    swatches.scaleSwatches.push(new Swatch());
-    swatches.generateScaleSwatches();
-    createInterface();
-    uiLayer.redrawCanvas();
-  }
-});
