@@ -74,9 +74,10 @@ const saver = new Saver(
     pattern: editorPattern,
     palette: palette,
   },
+  () => {},
   () => {
-  },
-  () => {
+    createInterface();
+    uiLayer.redrawCanvas();
     swatches.regenerateSwatches(editorPattern);
     editorLayer.redrawCanvas();
   }
@@ -1085,6 +1086,33 @@ function mouseClickUI(id: string) {
       uiLayer.redrawCanvas();
       break;
 
+    case "toolboxOpen": {
+      const input = document.createElement("input");
+      input.type = "file";
+
+      input.onchange = () => {
+        const file = input.files?.[0];
+        if (file) {
+          file.text().then((text) => {
+            saver.loadFromString(text);
+          });
+        }
+      };
+
+      input.click();
+      break;
+    }
+
+    case "toolboxSave": {
+      const text = saver.saveToString();
+      const blob = new Blob([text], { type: "text/plain" });
+      const link = document.createElement("a");
+      link.download = "scalemail.json";
+      link.href = window.URL.createObjectURL(blob);
+      link.click();
+      break;
+    }
+
     case "toolboxSettings":
       setOverlay("settings");
 
@@ -2028,6 +2056,26 @@ function setupToolboxButtons() {
 
   pEnt.icon = "iconNew";
   pEnt.tiptext = "New Pattern";
+
+  uiToolbox.addButton(pEnt);
+
+  // Open
+  pEnt = new UiButton();
+
+  pEnt.name = "toolboxOpen";
+
+  pEnt.icon = "iconOpen";
+  pEnt.tiptext = "Open Pattern";
+
+  uiToolbox.addButton(pEnt);
+
+  // Save
+  pEnt = new UiButton();
+
+  pEnt.name = "toolboxSave";
+
+  pEnt.icon = "iconSave";
+  pEnt.tiptext = "Save Pattern";
 
   uiToolbox.addButton(pEnt);
 

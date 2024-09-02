@@ -107,6 +107,12 @@ export class ColourPalette implements SaveData {
     return highest[0];
   }
 
+  resetColors() {
+    this.colours = [];
+
+    this.build();
+  }
+
   private build() {
     this.addColour(new PaletteColour("Void", 0, 0, 0, 0));
 
