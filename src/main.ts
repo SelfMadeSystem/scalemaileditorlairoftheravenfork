@@ -1578,6 +1578,17 @@ function buildOverlays() {
     ],
   });
 
+  // Keyboard
+  nWindow.addObjectToBar({
+    type: "text",
+    title: "Keyboard",
+    string: [
+      "Hold shift to pan the pattern.",
+      "Ctrl + S to save to local storage.",
+      "Ctrl + Esc to clear local storage and reset the pattern and palette.",
+    ],
+  });
+
   // Legal
   nWindow.addObjectToBar({
     type: "text",
