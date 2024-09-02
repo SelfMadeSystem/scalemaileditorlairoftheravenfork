@@ -72,12 +72,11 @@ document.body.appendChild(palettePicker);
 const saver = new Saver(
   {
     pattern: editorPattern,
+    palette: palette,
   },
   () => {
-    console.log("Saved!");
   },
   () => {
-    console.log("Loaded!");
     swatches.regenerateSwatches(editorPattern);
     editorLayer.redrawCanvas();
   }

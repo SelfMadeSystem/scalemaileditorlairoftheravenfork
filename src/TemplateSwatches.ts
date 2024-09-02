@@ -89,6 +89,11 @@ export class TemplateSwatches {
 
   /* Scale Functions */
   generateScaleSwatches() {
+    if (this.palette.colours.length !== this.scaleSwatches.length) {
+      this.scaleSwatches = new Array(this.palette.colours.length)
+        .fill(0)
+        .map(() => new Swatch());
+    }
     for (let x = 0; x < this.palette.colours.length; x++) {
       this.scaleSwatch(
         this.scaleSwatches[x],
