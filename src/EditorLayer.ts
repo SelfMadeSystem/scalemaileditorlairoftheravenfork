@@ -5,8 +5,8 @@ import { TemplateSwatches } from "./TemplateSwatches";
 import { getCurrentTheme } from "./Theme";
 
 export class EditorLayer {
-  public bgCanvas: HTMLCanvasElement;
-  public bgContext: CanvasRenderingContext2D;
+  public gridCanvas: HTMLCanvasElement;
+  public gridContext: CanvasRenderingContext2D;
   public canvas: HTMLCanvasElement;
   public context: CanvasRenderingContext2D;
 
@@ -19,17 +19,17 @@ export class EditorLayer {
   public offsetY = 0;
   public bgOffsetY = 0;
   public reverse = false;
-  public drawBg = false;
+  public doDrawGrid = false;
 
   constructor(
     public drawUtils: DrawUtils,
     private swatches: TemplateSwatches,
     public editorPattern: PatternMatrix
   ) {
-    this.bgCanvas = document.getElementById(
-      "canvasBackground"
+    this.gridCanvas = document.getElementById(
+      "canvasGrid"
     ) as HTMLCanvasElement;
-    this.bgContext = this.bgCanvas.getContext("2d")!;
+    this.gridContext = this.gridCanvas.getContext("2d")!;
     this.canvas = document.getElementById("canvasEditor") as HTMLCanvasElement;
     this.context = this.canvas.getContext("2d")!;
 
@@ -60,11 +60,11 @@ export class EditorLayer {
     this.height = height;
     this.width = width;
 
-    this.bgCanvas.style.height = this.canvas.style.height = height + "px";
-    this.bgCanvas.style.width = this.canvas.style.width = width + "px";
+    this.gridCanvas.style.height = this.canvas.style.height = height + "px";
+    this.gridCanvas.style.width = this.canvas.style.width = width + "px";
 
-    this.bgCanvas.height = this.canvas.height = this.height;
-    this.bgCanvas.width = this.canvas.width = this.width;
+    this.gridCanvas.height = this.canvas.height = this.height;
+    this.gridCanvas.width = this.canvas.width = this.width;
   }
 
   public redrawCanvas() {
@@ -73,7 +73,7 @@ export class EditorLayer {
     if (diff > updateInterval) {
       this.lastDraw = now;
       this.drawScales();
-      this.drawBackground();
+      this.drawGrid();
     } else {
       var that = this;
 
@@ -97,11 +97,11 @@ export class EditorLayer {
     );
   }
 
-  public drawBackground() {
-    const context = this.bgContext;
+  public drawGrid() {
+    const context = this.gridContext;
     // const pattern = this.editorPattern;
     context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-    if (!this.drawBg) {
+    if (!this.doDrawGrid) {
       return;
     }
 
@@ -110,8 +110,8 @@ export class EditorLayer {
     // Variables
     var m = 0;
 
-    var backgroundOriginX = 0;
-    var backgroundOriginY = 0;
+    var gridOriginX = 0;
+    var gridOriginY = 0;
 
     var stepX = this.drawUtils.scaleSpacingX;
     var stepY = this.drawUtils.scaleSpacingY * 2;
@@ -123,35 +123,35 @@ export class EditorLayer {
     //   m = this.drawUtils.scaleSpacingX / 2;
     // }
 
-    backgroundOriginX = -dot * 1.5 + this.drawUtils.scaleSpacingX + m;
-    backgroundOriginY =
+    gridOriginX = -dot * 1.5 + this.drawUtils.scaleSpacingX + m;
+    gridOriginY =
       (this.bgOffsetY * stepY) / 2 + this.drawUtils.scalePathBottom.y;
 
     // Calculate Pan Offset
-    backgroundOriginX += this.offsetX;
-    backgroundOriginY += this.offsetY;
+    gridOriginX += this.offsetX;
+    gridOriginY += this.offsetY;
 
     // Step Back to Edge
-    for (let x = 0; backgroundOriginX > 0; x++) {
-      backgroundOriginX -= stepX;
+    for (let x = 0; gridOriginX > 0; x++) {
+      gridOriginX -= stepX;
     }
 
-    for (let y = 0; backgroundOriginY > 0; y++) {
-      backgroundOriginY -= stepY;
+    for (let y = 0; gridOriginY > 0; y++) {
+      gridOriginY -= stepY;
     }
 
     context.strokeStyle = colour;
 
-    // Draw Dots
+    // Draw Grid Lines
     context.beginPath();
-    for (let y = backgroundOriginY; y < this.height + stepY; y += stepY) {
+    for (let y = gridOriginY; y < this.height + stepY; y += stepY) {
       const ry = Math.round(y);
       context.moveTo(0, ry);
       context.lineTo(context.canvas.width, ry);
     }
     context.stroke();
     context.beginPath();
-    for (let x = backgroundOriginX; x < this.width + stepY; x += stepX) {
+    for (let x = gridOriginX; x < this.width + stepY; x += stepX) {
       const rx = Math.round(x);
       context.moveTo(rx, 0);
       context.lineTo(rx, context.canvas.height);
@@ -165,7 +165,12 @@ export class EditorLayer {
     this.offsetY += moveY;
   }
 
-  public panTowards(prevZoom: number, nextZoom: number, mouseX: number, mouseY: number) {
+  public panTowards(
+    prevZoom: number,
+    nextZoom: number,
+    mouseX: number,
+    mouseY: number
+  ) {
     mouseX -= this.offsetX;
     mouseY -= this.offsetY;
     const zoomDiff = nextZoom / prevZoom;

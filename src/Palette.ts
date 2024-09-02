@@ -190,6 +190,19 @@ export class ColourPalette implements SaveData {
   }
 }
 
+export interface PaletteColourType {
+  name: string;
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+  count: number;
+  brushed: boolean;
+  plastic: boolean;
+  shiny: boolean;
+  color: string;
+}
+
 export class PaletteColour {
   public count: number = 0;
   public brushed: boolean = false;

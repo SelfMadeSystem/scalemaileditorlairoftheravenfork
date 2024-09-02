@@ -1126,10 +1126,9 @@ function mouseClickUI(id: string) {
           true;
       }
 
-      if (editorLayer.drawBg === true) {
-        (
-          document.getElementById("toggleBackground") as HTMLInputElement
-        ).checked = true;
+      if (editorLayer.doDrawGrid === true) {
+        (document.getElementById("toggleGrid") as HTMLInputElement).checked =
+          true;
       }
 
       overlayInterface.showOverlay();
@@ -1553,13 +1552,13 @@ function buildOverlays() {
     change: toggleTheme,
   });
 
-  // Background
+  // Grid
   nWindow.addObjectToPane({
-    id: "toggleBackground",
+    id: "toggleGrid",
     type: "toggle",
-    title: "Background",
+    title: "Grid",
     string: ["Off", "On"],
-    change: toggleBackground,
+    change: toggleGrid,
   });
 
   overlayInterface.addScreen(nWindow);
@@ -1936,8 +1935,8 @@ function toggleTheme() {
   uiLayer.redrawCanvas();
 }
 
-function toggleBackground() {
-  editorLayer.drawBg = !editorLayer.drawBg;
+function toggleGrid() {
+  editorLayer.doDrawGrid = !editorLayer.doDrawGrid;
   editorLayer.redrawCanvas();
 }
 

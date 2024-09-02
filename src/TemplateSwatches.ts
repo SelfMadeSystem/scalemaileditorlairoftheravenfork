@@ -79,8 +79,8 @@ export class TemplateSwatches {
         if (pattern.matrix[y][x].colour > limit) {
           this.patternSwatch.context.drawImage(
             this.scaleSwatches[pattern.matrix[y][x].colour].canvas,
-            Math.round(sHalf + this.drawUtils.scaleSpacingX * x),
-            Math.round(this.drawUtils.scaleSpacingY * y)
+            sHalf + this.drawUtils.scaleSpacingX * x,
+            this.drawUtils.scaleSpacingY * y
           );
         }
       }
