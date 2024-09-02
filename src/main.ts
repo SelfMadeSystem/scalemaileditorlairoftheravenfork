@@ -2360,7 +2360,7 @@ function createData(target: EntityLayer, pattern: PatternMatrix) {
   // Variables
   var pData;
 
-  var output: [number, string][] = [];
+  var output: [0 | 1, string][] = [];
 
   var oHeight = 0;
 

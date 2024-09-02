@@ -1,6 +1,7 @@
 import { PaletteColour } from "./Palette";
 import { UiButton } from "./ui/UiButton";
 
+// TODO: Remove this nonsense.
 export default class Entity {
   public id = "";
   public object: UiButton | undefined;
@@ -36,5 +37,5 @@ export default class Entity {
 
   public textAlign = "";
   public textString = "";
-  public textType = 0;
+  public textType: 0 | 1 = 0;
 }
