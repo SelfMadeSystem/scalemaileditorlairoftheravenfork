@@ -2,13 +2,11 @@ import { fontStyles } from "./Consts";
 import Entity from "./Entity";
 import ImageLoader from "./ImageLoader";
 import { TemplateSwatches } from "./TemplateSwatches";
-import { themes } from "./Theme";
+import { getCurrentTheme } from "./Theme";
 import { uiIconSize } from "./ui";
 import { arc, findCircle, Pos } from "./utils";
 
 export class DrawUtils {
-  public theme: 0 | 1 = 0;
-
   // Scale Variables
   public scaleRadius = 75;
 
@@ -196,7 +194,7 @@ export class DrawUtils {
     var posX = x;
 
     context.font = fontStyles[type];
-    context.fillStyle = themes[this.theme].fontColour;
+    context.fillStyle = getCurrentTheme().fontColour;
 
     if (align == "right") {
       textWidth = context.measureText(string).width;

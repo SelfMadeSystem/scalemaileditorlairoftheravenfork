@@ -1,36 +1,60 @@
-export const themes: ThemeStyle[] = [
-  {
-    id: "dark",
-    fontColour: "#ffffff",
+export type ThemeNames = "light" | "dark";
 
-    backgroundColour: "#171717",
-    dotColour: "#9c9c9c99",
-    overlayColour: "#4e4e4e",
+export function setTheme(theme: ThemeNames) {
+  if (theme == "light") {
+    document.body.classList.add("light");
+    document.body.classList.remove("dark");
+  } else {
+    document.body.classList.add("dark");
+    document.body.classList.remove("light");
+  }
+  themeCache = getRealTheme();
+  localStorage.setItem("theme", theme);
+}
 
-    toggleColour: "#e8e8e8",
-    paletteColour: "#ffffff",
+export function setDefaultTheme() {
+  const theme = localStorage.getItem("theme");
+  if (theme == "light" || theme == "dark") {
+    setTheme(theme);
+  }
 
-    logoColour: "White",
-  },
-  {
-    id: "light",
+  setTheme(getTheme());
+}
 
-    fontColour: "#000000",
+export function getTheme(): ThemeNames {
+  if (document.body.classList.contains("light")) {
+    return "light";
+  } else if (document.body.classList.contains("dark")) {
+    return "dark";
+  }
+  const localStorageTheme = localStorage.getItem("theme");
+  if (localStorageTheme == "light" || localStorageTheme == "dark") {
+    return localStorageTheme;
+  }
+  const wantsLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+  return wantsLight ? "light" : "dark";
+}
 
-    backgroundColour: "#e8e8e8",
-    dotColour: "#63636399",
-    overlayColour: "#b1b1b1",
+let themeCache: ThemeStyle = getRealTheme();
 
-    toggleColour: "#171717",
-    paletteColour: "#000000",
+function getRealTheme(): ThemeStyle {
+  const calculatedStyle = getComputedStyle(document.body);
+  return {
+    fontColour: calculatedStyle.getPropertyValue("--font-colour"),
+    backgroundColour: calculatedStyle.getPropertyValue("--background-colour"),
+    dotColour: calculatedStyle.getPropertyValue("--dot-colour"),
+    overlayColour: calculatedStyle.getPropertyValue("--overlay-colour"),
+    toggleColour: calculatedStyle.getPropertyValue("--toggle-colour"),
+    paletteColour: calculatedStyle.getPropertyValue("--palette-colour"),
+    logoColour: calculatedStyle.getPropertyValue("--logo-colour"),
+  };
+}
 
-    logoColour: "Black",
-  },
-];
+export function getCurrentTheme(): ThemeStyle {
+  return themeCache;
+}
 
 export interface ThemeStyle {
-  id: string;
-
   fontColour: string;
 
   backgroundColour: string;

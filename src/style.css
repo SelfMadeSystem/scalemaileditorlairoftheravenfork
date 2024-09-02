@@ -18,8 +18,58 @@
 
   vertical-align: text-top;
 
-  color: #ffffff;
+  color: var(--font-colour, #ffffff);
   font-family: montserrat, tahoma, sans-serif;
+}
+
+:root {
+  --font-colour: #ffffff;
+  --background-colour: #171717;
+  --dot-colour: #9c9c9c99;
+  --overlay-colour: #4e4e4e;
+
+  --toggle-colour: #e8e8e8;
+  --palette-colour: #ffffff;
+
+  --logo-colour: white;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --font-colour: #000000;
+    --background-colour: #e8e8e8;
+    --dot-colour: #63636399;
+    --overlay-colour: #1b1b1b;
+  
+    --toggle-colour: #171717;
+    --palette-colour: #000000;
+  
+    --logo-colour: black;
+  }
+}
+
+body.dark {
+  --font-colour: #ffffff;
+  --background-colour: #171717;
+  --dot-colour: #9c9c9c99;
+  --overlay-colour: #4e4e4e;
+
+  --toggle-colour: #e8e8e8;
+  --palette-colour: #ffffff;
+
+  --logo-colour: white;
+}
+
+body.light {
+  --font-colour: #000000;
+  --background-colour: #e8e8e8;
+  --dot-colour: #63636399;
+  --overlay-colour: #b1b1b1;
+
+  --toggle-colour: #171717;
+  --palette-colour: #000000;
+
+  --logo-colour: black;
 }
 
 body {
@@ -208,12 +258,12 @@ body {
 /* Borders */
 .borderBottom,
 h1 {
-  border-bottom: 2px solid #ffffff;
+  border-bottom: 2px solid var(--font-colour, #ffffff);
 }
 
 .borderTop,
 .overlayFooter {
-  border-top: 1px solid #ffffff;
+  border-top: 1px solid var(--font-colour, #ffffff);
 }
 
 /* Floats */
@@ -227,7 +277,7 @@ h1 {
 
 /* Themes */
 .backgroundTheme {
-  background-color: #171717;
+  background-color: var(--background-colour, #171717);
 }
 
 /* Cursors */
@@ -366,7 +416,7 @@ label ~ input[type="checkbox"] {
 }
 
 input[type="file"] {
-  color: #ffffff;
+  color: var(--font-colour, #ffffff);
   text-align: left;
 }
 
@@ -480,7 +530,7 @@ select {
 
   border-radius: 10px;
 
-  background-color: #9c9c9c;
+  background-color: var(--toggle-colour, #9c9c9c);
 
   transition: 0.3s;
 }
@@ -624,7 +674,7 @@ input:checked + .slider {
   flex-flow: row wrap;
   align-content: flex-start;
 
-  background-color: #4e4e4e;
+  background-color: var(--overlay-colour, #4e4e4e);
   box-shadow: 0px 5px 5px 0 rgba(0, 0, 0, 0.5);
 }
 

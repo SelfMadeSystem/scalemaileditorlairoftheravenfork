@@ -2,7 +2,7 @@ import { fontStyles, updateInterval } from "./Consts";
 import { DrawUtils } from "./DrawUtils";
 import { PatternMatrix } from "./PatternMatrix";
 import { TemplateSwatches } from "./TemplateSwatches";
-import { themes } from "./Theme";
+import { getCurrentTheme } from "./Theme";
 
 export class EditorLayer {
   public bgCanvas: HTMLCanvasElement;
@@ -105,7 +105,7 @@ export class EditorLayer {
       return;
     }
 
-    const colour = themes[this.drawUtils.theme].dotColour;
+    const colour = getCurrentTheme().dotColour;
 
     // Variables
     var m = 0;

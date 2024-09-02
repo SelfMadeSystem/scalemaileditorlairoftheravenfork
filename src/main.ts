@@ -11,7 +11,6 @@ import "./style.css";
 import ImageLoader from "./ImageLoader";
 import Entity from "./Entity";
 import { ColourPalette } from "./Palette";
-import { themes } from "./Theme";
 import { overlayInterface, setOverlay } from "./overlay/OverlayInterface";
 import { OverlayScreen } from "./overlay/OverlayScreen";
 import { UiButton } from "./ui/UiButton";
@@ -26,6 +25,7 @@ import { ImageMatrix } from "./ImageStuff";
 import { Pos, posAdd, posDistSq } from "./utils";
 import { EditorLayer } from "./EditorLayer";
 import { PalettePicker } from "./palette-picker";
+import { getCurrentTheme, getTheme, setDefaultTheme, setTheme } from "./Theme";
 
 // Variables ==========================================================================================================
 const imageLoader = new ImageLoader(startDesigner);
@@ -174,7 +174,7 @@ function takePhoto() {
   photoLayer.scaleCanvas(ch + 100, cw + 50, false);
 
   // Fill Layer
-  context.fillStyle = themes[drawUtils.theme].backgroundColour;
+  context.fillStyle = getCurrentTheme().backgroundColour;
   context.fillRect(0, 0, photoLayer.width, photoLayer.height);
 
   // Create Image
@@ -1062,7 +1062,7 @@ function mouseClickUI(id: string) {
           true;
       }
 
-      if (drawUtils.theme == 1) {
+      if (getTheme() === "light") {
         (document.getElementById("toggleTheme") as HTMLInputElement).checked =
           true;
       }
@@ -1898,38 +1898,34 @@ function toggleEmpty() {
 }
 
 function toggleTheme() {
-  if (drawUtils.theme == 0) {
-    drawUtils.theme = 1;
-  } else {
-    drawUtils.theme = 0;
-  }
+  setTheme(getTheme() == "light" ? "dark" : "light");
 
-  changeCSS("*", "color", themes[drawUtils.theme].fontColour);
-  changeCSS(
-    ".borderBottom, h1",
-    "border-color",
-    themes[drawUtils.theme].fontColour
-  );
-  changeCSS(
-    ".borderTop, .overlayFooter",
-    "border-color",
-    themes[drawUtils.theme].fontColour
-  );
-  changeCSS(
-    ".backgroundTheme",
-    "background-color",
-    themes[drawUtils.theme].backgroundColour
-  );
-  changeCSS('input[type="file"]', "color", themes[drawUtils.theme].fontColour);
-  changeCSS(
-    ".slider",
-    "background-color",
-    themes[drawUtils.theme].toggleColour
-  );
+  // changeCSS("*", "color", getCurrentTheme().fontColour);
+  // changeCSS(
+  //   ".borderBottom, h1",
+  //   "border-color",
+  //   getCurrentTheme().fontColour
+  // );
+  // changeCSS(
+  //   ".borderTop, .overlayFooter",
+  //   "border-color",
+  //   getCurrentTheme().fontColour
+  // );
+  // changeCSS(
+  //   ".backgroundTheme",
+  //   "background-color",
+  //   getCurrentTheme().backgroundColour
+  // );
+  // changeCSS('input[type="file"]', "color", getCurrentTheme().fontColour);
+  // changeCSS(
+  //   ".slider",
+  //   "background-color",
+  //   getCurrentTheme().toggleColour
+  // );
   changeCSS(
     "#overlayWindow",
     "background-color",
-    themes[drawUtils.theme].overlayColour
+    getCurrentTheme().overlayColour
   );
 
   createInterface();
@@ -2322,7 +2318,7 @@ function createPalette(target: EntityLayer) {
   for (let x = 1; x < colors; x++) {
     const strokeColour =
       x === activeColour
-        ? themes[drawUtils.theme].paletteColour
+        ? getCurrentTheme().paletteColour
         : palette.colours[x].color;
 
     const nEnt = new Entity();
@@ -2421,7 +2417,7 @@ function createData(target: EntityLayer, pattern: PatternMatrix) {
     nEnt.shape = "text";
 
     nEnt.fill = true;
-    nEnt.fillColour = themes[drawUtils.theme].fontColour;
+    nEnt.fillColour = getCurrentTheme().fontColour;
 
     nEnt.originX = posX;
     nEnt.originY = posY;
@@ -2434,5 +2430,6 @@ function createData(target: EntityLayer, pattern: PatternMatrix) {
   }
 }
 
+setDefaultTheme();
 drawUtils.imageAssets.loadImages();
 window.addEventListener("resize", scaleCanvases);
