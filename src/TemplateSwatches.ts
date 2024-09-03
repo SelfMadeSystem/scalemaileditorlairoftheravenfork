@@ -79,8 +79,8 @@ export class TemplateSwatches {
         if (pattern.matrix[y][x].colour > limit) {
           this.patternSwatch.context.drawImage(
             this.scaleSwatches[pattern.matrix[y][x].colour].canvas,
-            Math.round(sHalf + this.drawUtils.scaleSpacingX * x),
-            Math.round(this.drawUtils.scaleSpacingY * y)
+            sHalf + this.drawUtils.scaleSpacingX * x,
+            this.drawUtils.scaleSpacingY * y
           );
         }
       }
@@ -89,6 +89,11 @@ export class TemplateSwatches {
 
   /* Scale Functions */
   generateScaleSwatches() {
+    if (this.palette.colours.length !== this.scaleSwatches.length) {
+      this.scaleSwatches = new Array(this.palette.colours.length)
+        .fill(0)
+        .map(() => new Swatch());
+    }
     for (let x = 0; x < this.palette.colours.length; x++) {
       this.scaleSwatch(
         this.scaleSwatches[x],

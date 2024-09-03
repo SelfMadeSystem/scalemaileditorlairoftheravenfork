@@ -26,6 +26,7 @@ import { Pos, posAdd, posDistSq } from "./utils";
 import { EditorLayer } from "./EditorLayer";
 import { PalettePicker } from "./palette-picker";
 import { getCurrentTheme, getTheme, setDefaultTheme, setTheme } from "./Theme";
+import { Saver } from "./Saver";
 
 // Variables ==========================================================================================================
 const imageLoader = new ImageLoader(startDesigner);
@@ -66,6 +67,21 @@ const palettePicker = new PalettePicker(palette, swatches, () => {
   editorLayer.redrawCanvas();
 });
 document.body.appendChild(palettePicker);
+
+// Save
+const saver = new Saver(
+  {
+    pattern: editorPattern,
+    palette: palette,
+  },
+  () => {},
+  () => {
+    createInterface();
+    uiLayer.redrawCanvas();
+    swatches.regenerateSwatches(editorPattern);
+    editorLayer.redrawCanvas();
+  }
+);
 
 // Interaction Variables
 var panCenterX = 0;
@@ -811,7 +827,7 @@ function mouseHandler(event: MouseEvent) {
 
 function keyHandler(event: KeyboardEvent) {
   switch (event.key) {
-    case "Shift":
+    case "Shift": {
       if (event.type == "keydown") {
         if (panMouse === false) {
           setCursor("Grab");
@@ -821,6 +837,22 @@ function keyHandler(event: KeyboardEvent) {
       } else {
         panKey = false;
       }
+      break;
+    }
+    case "s": {
+      if (event.type == "keydown" && event.ctrlKey === true) {
+        saver.saveToLocalStorage();
+        event.preventDefault();
+      }
+      break;
+    }
+    case "Escape": {
+      if (event.type == "keydown" && event.ctrlKey === true) {
+        saver.clearLocalStorage();
+        window.location.reload();
+      }
+      break;
+    }
   }
 }
 
@@ -1054,6 +1086,33 @@ function mouseClickUI(id: string) {
       uiLayer.redrawCanvas();
       break;
 
+    case "toolboxOpen": {
+      const input = document.createElement("input");
+      input.type = "file";
+
+      input.onchange = () => {
+        const file = input.files?.[0];
+        if (file) {
+          file.text().then((text) => {
+            saver.loadFromString(text);
+          });
+        }
+      };
+
+      input.click();
+      break;
+    }
+
+    case "toolboxSave": {
+      const text = saver.saveToString();
+      const blob = new Blob([text], { type: "text/plain" });
+      const link = document.createElement("a");
+      link.download = "scalemail.json";
+      link.href = window.URL.createObjectURL(blob);
+      link.click();
+      break;
+    }
+
     case "toolboxSettings":
       setOverlay("settings");
 
@@ -1067,10 +1126,9 @@ function mouseClickUI(id: string) {
           true;
       }
 
-      if (editorLayer.drawBg === true) {
-        (
-          document.getElementById("toggleBackground") as HTMLInputElement
-        ).checked = true;
+      if (editorLayer.doDrawGrid === true) {
+        (document.getElementById("toggleGrid") as HTMLInputElement).checked =
+          true;
       }
 
       overlayInterface.showOverlay();
@@ -1494,13 +1552,13 @@ function buildOverlays() {
     change: toggleTheme,
   });
 
-  // Background
+  // Grid
   nWindow.addObjectToPane({
-    id: "toggleBackground",
+    id: "toggleGrid",
     type: "toggle",
-    title: "Background",
+    title: "Grid",
     string: ["Off", "On"],
-    change: toggleBackground,
+    change: toggleGrid,
   });
 
   overlayInterface.addScreen(nWindow);
@@ -1516,6 +1574,17 @@ function buildOverlays() {
     string: [
       "Use this tool to create scalemail inlays and patterns, share your designs with the world, and browse the community submissions.",
       "This tool may be used for any purpose.",
+    ],
+  });
+
+  // Keyboard
+  nWindow.addObjectToBar({
+    type: "text",
+    title: "Keyboard",
+    string: [
+      "Hold shift to pan the pattern.",
+      "Ctrl + S to save to local storage.",
+      "Ctrl + Esc to clear local storage and reset the pattern and palette.",
     ],
   });
 
@@ -1819,72 +1888,6 @@ function patternShapeDiamond(target: PatternMatrix, colour: number) {
   target.getSize();
 }
 
-// Shape Functions ====================================================================================================
-
-// Startup Functions ==================================================================================================
-function startDesigner() {
-  // Configure Scales
-  splashText.innerHTML = "Calculating scales...";
-  drawUtils.updateScaleVariables(75);
-
-  // Pattern
-  newPattern(editorPattern, 5, 9, 1);
-
-  // Templates
-  splashText.innerHTML = "Generating swatches...";
-
-  swatches.regenerateSwatches(editorPattern);
-
-  // Editor
-  editorLayer.redrawCanvas();
-
-  // Background
-  splashText.innerHTML = "Adding layers of complexity...";
-
-  // UI
-  setupInterface();
-  createInterface();
-  uiLayer.redrawCanvas();
-
-  // Overlays
-  buildOverlays();
-
-  // Event Triggers
-  splashText.innerHTML = "Reticulating splines...";
-
-  interactionLayer.addEventListener("click", mouseHandler);
-  interactionLayer.addEventListener("mousemove", mouseHandler);
-  interactionLayer.addEventListener("mousedown", mouseHandler);
-  interactionLayer.addEventListener("mouseleave", mouseHandler);
-  interactionLayer.addEventListener("mouseup", mouseHandler);
-  interactionLayer.addEventListener("wheel", zoomCanvasMouse);
-
-  document.addEventListener("keydown", keyHandler);
-  document.addEventListener("keyup", keyHandler);
-
-  overlayInterface.background.addEventListener("click", function () {
-    overlayInterface.hideOverlay();
-  });
-
-  // Hide Splash Screen
-  splashText.innerHTML = "Here we go!";
-  overlayInterface.hideOverlay();
-  document.getElementById("overlayBackground")!.className = "";
-
-  // Check compatability
-  swatches.patternSwatch.context.globalCompositeOperation = "overlay";
-
-  if (swatches.patternSwatch.context.globalCompositeOperation !== "overlay") {
-    setOverlay("compError");
-    overlayInterface.showOverlay();
-  }
-
-  swatches.patternSwatch.context.globalCompositeOperation = "source-over";
-
-  editorLayer.panCenter();
-  scaleCanvases();
-}
-
 // Toggle Settings ====================================================================================================
 function toggleEmpty() {
   if (drawUtils.drawEmpty === true) {
@@ -1932,8 +1935,8 @@ function toggleTheme() {
   uiLayer.redrawCanvas();
 }
 
-function toggleBackground() {
-  editorLayer.drawBg = !editorLayer.drawBg;
+function toggleGrid() {
+  editorLayer.doDrawGrid = !editorLayer.doDrawGrid;
   editorLayer.redrawCanvas();
 }
 
@@ -2063,6 +2066,26 @@ function setupToolboxButtons() {
 
   pEnt.icon = "iconNew";
   pEnt.tiptext = "New Pattern";
+
+  uiToolbox.addButton(pEnt);
+
+  // Open
+  pEnt = new UiButton();
+
+  pEnt.name = "toolboxOpen";
+
+  pEnt.icon = "iconOpen";
+  pEnt.tiptext = "Open Pattern";
+
+  uiToolbox.addButton(pEnt);
+
+  // Save
+  pEnt = new UiButton();
+
+  pEnt.name = "toolboxSave";
+
+  pEnt.icon = "iconSave";
+  pEnt.tiptext = "Save Pattern";
 
   uiToolbox.addButton(pEnt);
 
@@ -2430,6 +2453,74 @@ function createData(target: EntityLayer, pattern: PatternMatrix) {
   }
 }
 
-setDefaultTheme();
+// Startup Functions ==================================================================================================
+function startDesigner() {
+  // Configure Scales
+  splashText.innerHTML = "Calculating scales...";
+  drawUtils.updateScaleVariables(75);
+
+  // Pattern
+  newPattern(editorPattern, 5, 9, 1);
+
+  // Templates
+  splashText.innerHTML = "Generating swatches...";
+
+  swatches.regenerateSwatches(editorPattern);
+
+  // Editor
+  editorLayer.redrawCanvas();
+
+  // Background
+  splashText.innerHTML = "Adding layers of complexity...";
+
+  // UI
+  setupInterface();
+  createInterface();
+  uiLayer.redrawCanvas();
+
+  // Overlays
+  buildOverlays();
+
+  // Event Triggers
+  splashText.innerHTML = "Reticulating splines...";
+
+  interactionLayer.addEventListener("click", mouseHandler);
+  interactionLayer.addEventListener("mousemove", mouseHandler);
+  interactionLayer.addEventListener("mousedown", mouseHandler);
+  interactionLayer.addEventListener("mouseleave", mouseHandler);
+  interactionLayer.addEventListener("mouseup", mouseHandler);
+  interactionLayer.addEventListener("wheel", zoomCanvasMouse);
+
+  document.addEventListener("keydown", keyHandler);
+  document.addEventListener("keyup", keyHandler);
+
+  overlayInterface.background.addEventListener("click", function () {
+    overlayInterface.hideOverlay();
+  });
+
+  // Load from local storage
+  splashText.innerHTML = "Loading settings...";
+  setDefaultTheme();
+  saver.loadFromLocalStorage();
+
+  // Hide Splash Screen
+  splashText.innerHTML = "Here we go!";
+  overlayInterface.hideOverlay();
+  document.getElementById("overlayBackground")!.className = "";
+
+  // Check compatability
+  swatches.patternSwatch.context.globalCompositeOperation = "overlay";
+
+  if (swatches.patternSwatch.context.globalCompositeOperation !== "overlay") {
+    setOverlay("compError");
+    overlayInterface.showOverlay();
+  }
+
+  swatches.patternSwatch.context.globalCompositeOperation = "source-over";
+
+  editorLayer.panCenter();
+  scaleCanvases();
+}
+
 drawUtils.imageAssets.loadImages();
 window.addEventListener("resize", scaleCanvases);

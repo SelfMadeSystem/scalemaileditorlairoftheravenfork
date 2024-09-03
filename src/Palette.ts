@@ -1,10 +1,31 @@
 import { PatternMatrix } from "./PatternMatrix";
+import { JSONObj, SaveData } from "./Saver";
 
-export class ColourPalette {
+export class ColourPalette implements SaveData {
   public colours: PaletteColour[] = [];
 
   constructor() {
     this.build();
+  }
+
+  // Save data
+  saveTo(): JSONObj {
+    return {
+      colours: this.colours.slice(2).map((x) => x.saveTo()),
+    };
+  }
+
+  loadFrom(data: JSONObj): void {
+    if (Array.isArray(data.colours)) {
+      const newColours = data.colours.map((x) => {
+        if (typeof x !== "object" || !x || Array.isArray(x)) {
+          throw new Error("Invalid palette colour data: " + JSON.stringify(x));
+        }
+        return PaletteColour.loadFrom(x);
+      });
+
+      this.colours = [...this.colours.slice(0, 2), ...newColours];
+    }
   }
 
   addColour(colour: PaletteColour) {
@@ -84,6 +105,12 @@ export class ColourPalette {
     }
 
     return highest[0];
+  }
+
+  resetColors() {
+    this.colours = [];
+
+    this.build();
   }
 
   private build() {
@@ -180,6 +207,11 @@ export class PaletteColour {
     this.color = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
   }
 
+  private setCount(count: number) {
+    this.count = count;
+    return this;
+  }
+
   setBrushed(brushed = true) {
     this.brushed = brushed;
     return this;
@@ -193,5 +225,43 @@ export class PaletteColour {
   setShiny(shiny = true) {
     this.shiny = shiny;
     return this;
+  }
+
+  // Save Data
+  saveTo(): JSONObj {
+    return {
+      name: this.name,
+      r: this.r,
+      g: this.g,
+      b: this.b,
+      a: this.a,
+      count: this.count,
+      brushed: this.brushed,
+      plastic: this.plastic,
+      shiny: this.shiny,
+    };
+  }
+
+  // Load Data
+  static loadFrom(data: JSONObj) {
+    const { name, r, g, b, a, count, brushed, plastic, shiny } = data;
+    if (
+      typeof name !== "string" ||
+      typeof r !== "number" ||
+      typeof g !== "number" ||
+      typeof b !== "number" ||
+      typeof a !== "number" ||
+      typeof count !== "number" ||
+      typeof brushed !== "boolean" ||
+      typeof plastic !== "boolean" ||
+      typeof shiny !== "boolean"
+    ) {
+      throw new Error("Invalid palette colour data: " + JSON.stringify(data));
+    }
+    return new PaletteColour(name, r, g, b, a)
+      .setCount(count)
+      .setBrushed(brushed)
+      .setPlastic(plastic)
+      .setShiny(shiny);
   }
 }

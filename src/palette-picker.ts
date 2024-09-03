@@ -2,19 +2,8 @@ import { html, css, LitElement } from "lit";
 import { ColourPalette, PaletteColour } from "./Palette";
 import { TemplateSwatches } from "./TemplateSwatches";
 import { Swatch } from "./Swatch";
-import { customElement, property } from "lit/decorators.js";
-import "toolcool-color-picker";
-import type ColorPicker from "toolcool-color-picker";
-
-function rgbaToHex(r: number, g: number, b: number, a: number) {
-  if (a === 255) {
-    return `#${r.toString(16)}${g.toString(16)}${b.toString(16)}`;
-  } else {
-    return `#${r.toString(16)}${g.toString(16)}${b.toString(16)}${a
-      .toString(16)
-      .padStart(2, "0")}`;
-  }
-}
+import { customElement, state } from "lit/decorators.js";
+import "./color-picker";
 
 @customElement("palette-picker")
 export class PalettePicker extends LitElement {
@@ -82,7 +71,7 @@ export class PalettePicker extends LitElement {
     super();
   }
 
-  @property({ type: Boolean })
+  @state()
   show: boolean = false;
 
   createPalette() {
@@ -100,30 +89,8 @@ export class PalettePicker extends LitElement {
     this.onUpdate();
   }
 
-  changeColor(i: number, r: number, g: number, b: number, a: number) {
-    const c = this.palette.colours[i];
-    a = Math.round(a * 255);
-    r = Math.round(r);
-    g = Math.round(g);
-    b = Math.round(b);
-    if (c.r === r && c.g === g && c.b === b && c.a === a) return;
-    c.r = r;
-    c.g = g;
-    c.b = b;
-    c.a = a;
-    c.color = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
-    c.name = rgbaToHex(r, g, b, a);
+  onChangeColor(_e: CustomEvent, _i: number) {
     this.updateStuff();
-  }
-
-  onChangeColor(e: CustomEvent, i: number) {
-    this.changeColor(
-      i,
-      e.detail.color.r,
-      e.detail.color.g,
-      e.detail.color.b,
-      e.detail.color.a
-    );
   }
 
   toggle() {
@@ -134,10 +101,12 @@ export class PalettePicker extends LitElement {
     // Wait for the palette-picker component to be rendered
     this.updateComplete.then(() => {
       // Select all toolcool-color-picker elements
-      const colorPickers = this.shadowRoot!.querySelectorAll('toolcool-color-picker');
+      const colorPickers = this.shadowRoot!.querySelectorAll(
+        "toolcool-color-picker"
+      );
       colorPickers.forEach((picker, i) => {
-        const button = picker.shadowRoot!.querySelector('button');
-        
+        const button = picker.shadowRoot!.querySelector("button");
+
         button!.title = this.palette.colours[i + 2].name;
       });
     });
@@ -149,17 +118,13 @@ export class PalettePicker extends LitElement {
         <div class="bg" @click=${() => this.toggle()}></div>
         <div class="palette-container">
           <div class="palette">
-            ${this.palette.colours.slice(2).map(
-              (colour: PaletteColour, i: number) => html`
-                <toolcool-color-picker
-                  @change=${(e: CustomEvent) => this.onChangeColor(e, i + 2)}
-                  color=${colour.color}
-                  button-width="30px"
-                  button-height="30px"
-                  button-padding="0px"
-                ></toolcool-color-picker>
-              `
-            )}
+            ${this.palette.colours
+              .slice(2)
+              .map(
+                (colour: PaletteColour, i: number) => html`
+                  <color-picker .palette=${colour} @change=${(e: CustomEvent) => this.onChangeColor(e, i + 2)}></color-picker>
+                `
+              )}
           </div>
           <button @click=${() => (this.createPalette(), this.requestUpdate())}>
             Add Colour
@@ -173,6 +138,5 @@ export class PalettePicker extends LitElement {
 declare global {
   interface HTMLElementTagNameMap {
     "palette-picker": PalettePicker;
-    "toolcool-color-picker": ColorPicker;
   }
 }

@@ -1,7 +1,8 @@
 import { EditorLayer } from "./EditorLayer";
+import { JSONObj, SaveData } from "./Saver";
 import { Scale } from "./Scale";
 
-export class PatternMatrix {
+export class PatternMatrix implements SaveData {
   public matrix: Scale[][] = [];
 
   public height = 0;
@@ -9,6 +10,54 @@ export class PatternMatrix {
 
   public physicalHeight = 0;
   public physicalWidth = 0;
+
+  // Save data
+  public saveTo(): JSONObj {
+    return {
+      matrix: this.matrix.map((x) => x.map((y) => y.saveTo())),
+      height: this.height,
+      width: this.width,
+      physicalHeight: this.physicalHeight,
+      physicalWidth: this.physicalWidth,
+    };
+  }
+
+  public loadFrom(data: JSONObj) {
+    if (Array.isArray(data.matrix)) {
+      this.matrix = data.matrix.map((x) => {
+        if (Array.isArray(x)) {
+          return x.map((y) => new Scale(y));
+        } else {
+          console.warn("Invalid Matrix Data:", data);
+          return [];
+        }
+      });
+    }
+
+    if (typeof data.height === "number") {
+      this.height = data.height;
+    } else {
+      console.warn("Invalid Matrix Data:", data);
+    }
+
+    if (typeof data.width === "number") {
+      this.width = data.width;
+    } else {
+      console.warn("Invalid Matrix Data:", data);
+    }
+
+    if (typeof data.physicalHeight === "number") {
+      this.physicalHeight = data.physicalHeight;
+    } else {
+      console.warn("Invalid Matrix Data:", data);
+    }
+
+    if (typeof data.physicalWidth === "number") {
+      this.physicalWidth = data.physicalWidth;
+    } else {
+      console.warn("Invalid Matrix Data:", data);
+    }
+  }
 
   // Matrix Functions
   clearMatrix() {
@@ -294,7 +343,7 @@ export class PatternMatrix {
   }
 
   fillColumn(column: number, row: number, colour: number) {
-    for (let x = 0 + row % 2; x < this.matrix.length; x+=2) {
+    for (let x = 0 + (row % 2); x < this.matrix.length; x += 2) {
       this.matrix[x][column].setColour(colour);
     }
   }
