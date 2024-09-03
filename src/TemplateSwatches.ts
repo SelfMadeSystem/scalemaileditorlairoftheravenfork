@@ -144,7 +144,7 @@ export class TemplateSwatches {
       swatch.context.shadowOffsetY = 0;
 
       // Brush Texture
-      if (mirror === false && plastic === false) {
+      if (plastic === false) {
         if (brushed === true) {
           v = 1;
         }

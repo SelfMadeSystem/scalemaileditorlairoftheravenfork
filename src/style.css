@@ -1024,7 +1024,7 @@ palette-picker {
     gap: 10px;
     padding: 10px;
     max-width: 50%;
-    background: var(--overlay-colour);
+    background: var(--background-colour);
   }
 
   button {
