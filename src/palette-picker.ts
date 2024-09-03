@@ -1,19 +1,9 @@
 import { html, css, LitElement } from "lit";
-import { ColourPalette, PaletteColour, PaletteColourType } from "./Palette";
+import { ColourPalette, PaletteColour } from "./Palette";
 import { TemplateSwatches } from "./TemplateSwatches";
 import { Swatch } from "./Swatch";
 import { customElement, state } from "lit/decorators.js";
 import "./color-picker";
-
-function rgbaToHex(r: number, g: number, b: number, a: number) {
-  if (a === 255) {
-    return `#${r.toString(16)}${g.toString(16)}${b.toString(16)}`;
-  } else {
-    return `#${r.toString(16)}${g.toString(16)}${b.toString(16)}${a
-      .toString(16)
-      .padStart(2, "0")}`;
-  }
-}
 
 @customElement("palette-picker")
 export class PalettePicker extends LitElement {
@@ -99,7 +89,7 @@ export class PalettePicker extends LitElement {
     this.onUpdate();
   }
 
-  onChangeColor(e: CustomEvent, i: number) {
+  onChangeColor(_e: CustomEvent, _i: number) {
     this.updateStuff();
   }
 

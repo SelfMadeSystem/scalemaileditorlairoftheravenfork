@@ -1,10 +1,6 @@
 import { html, css, LitElement } from "lit";
-import { PaletteColourType } from "./Palette";
-import {
-  customElement,
-  property,
-  state,
-} from "lit/decorators.js";
+import { PaletteColour } from "./Palette";
+import { customElement, property, state } from "lit/decorators.js";
 import "toolcool-color-picker";
 import type ToolCoolColorPicker from "toolcool-color-picker";
 
@@ -25,6 +21,7 @@ export class ColorPicker extends LitElement {
         position: absolute;
         inset: 0;
         overflow: hidden;
+        pointer-events: none;
       }
 
       .paletteButton .half::before {
@@ -45,20 +42,36 @@ export class ColorPicker extends LitElement {
 
       .container {
         position: absolute;
-        top: 100%;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        top: calc(100% + 0.5rem);
+        left: 50%;
+        translate: -50%;
+        padding: 0.5rem;
         z-index: 1;
         background: var(--overlay-colour);
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        gap: 0.5rem;
       }
 
-      .hide {
-        display: none;
+      .container::before {
+        content: "";
+        position: absolute;
+        background: var(--overlay-colour);
+        z-index: -1;
+        top: 0;
+        left: 50%;
+        width: 1rem;
+        height: 1rem;
+        transform: translate(-50%, -0.35rem) rotate(45deg);
+      }
+
+      .checkboxes {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
       }
 
       toolcool-color-picker {
@@ -74,24 +87,11 @@ export class ColorPicker extends LitElement {
 
   private onUpdate = () => {
     // no passing object for you haha it's easier this way
-    this.dispatchEvent(
-      new CustomEvent("change")
-    );
+    this.dispatchEvent(new CustomEvent("change"));
   };
 
   @property({ type: Object })
-  palette: PaletteColourType = {
-    name: "undefined",
-    r: 0,
-    g: 0,
-    b: 0,
-    a: 255,
-    count: 0,
-    brushed: false,
-    plastic: false,
-    shiny: false,
-    color: "#000000",
-  };
+  palette: PaletteColour = new PaletteColour("???", 0, 0, 0, 0);
 
   @state()
   show: boolean = false;
@@ -160,18 +160,50 @@ export class ColorPicker extends LitElement {
           @click=${this.toggle}
           class="paletteButton"
           style="--colour: ${this.palette.color}"
+          title=${this.palette.name}
         >
           <span
             class="half"
             style="--colour: ${`rgb(${this.palette.r}, ${this.palette.g}, ${this.palette.b})`}"
           ></span>
         </button>
-        <div class="container ${this.show ? "show" : "hide"}">
+        ${this.show ? html`<div class="container">
           <toolcool-color-picker
             @change=${this.onChangeColor}
             color=${this.palette.color}
           ></toolcool-color-picker>
-        </div>
+          <input
+            type="text"
+            @input=${this.onChangeName}
+            .value=${this.palette.name}
+          />
+          <div class="checkboxes">
+            <span>
+              <input
+                type="checkbox"
+                @input=${this.onChangeBrush}
+                .checked=${this.palette.brushed}
+              />
+              Brushed
+            </span>
+            <span>
+              <input
+                type="checkbox"
+                @input=${this.onChangePlastic}
+                .checked=${this.palette.plastic}
+              />
+              Plastic
+            </span>
+            <span>
+              <input
+                type="checkbox"
+                @input=${this.onChangeShiny}
+                .checked=${this.palette.shiny}
+              />
+              Shiny
+            </span>
+          </div>
+        </div>` : html``}
       </div>
     `;
   }
