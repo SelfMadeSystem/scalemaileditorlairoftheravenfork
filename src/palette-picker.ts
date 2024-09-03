@@ -1,4 +1,4 @@
-import { html, css, LitElement } from "lit";
+import { html, LitElement } from "lit";
 import { ColourPalette, PaletteColour } from "./Palette";
 import { TemplateSwatches } from "./TemplateSwatches";
 import { Swatch } from "./Swatch";
@@ -7,68 +7,16 @@ import "./color-picker";
 
 @customElement("palette-picker")
 export class PalettePicker extends LitElement {
-  static get styles() {
-    return css`
-      .container {
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-      }
-
-      .hide {
-        display: none;
-      }
-
-      .bg {
-        position: absolute;
-        inset: 0;
-        z-index: -1;
-        background: #000;
-        opacity: 0.5;
-        cursor: pointer;
-      }
-
-      .palette {
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-
-      .palette-container {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        gap: 10px;
-        padding: 10px;
-        max-width: 50%;
-        background: #363636;
-      }
-
-      toolcool-color-picker {
-        /* button */
-        --tool-cool-color-picker-btn-bg: #0000;
-        --tool-cool-color-picker-btn-border-color: #000;
-        --tool-cool-color-picker-btn-border-color-inner: #363636;
-        --tool-cool-color-picker-btn-border-radius: 0rem;
-        --tool-cool-color-picker-btn-border-radius-inner: 0rem;
-      }
-    `;
-  }
-
   constructor(
     public palette: ColourPalette,
     public swatches: TemplateSwatches,
     public onUpdate: () => void
   ) {
     super();
+  }
+
+  protected createRenderRoot(): HTMLElement | DocumentFragment {
+    return this;
   }
 
   @state()
@@ -97,24 +45,12 @@ export class PalettePicker extends LitElement {
     this.show = !this.show;
   }
 
-  firstUpdated() {
-    // Wait for the palette-picker component to be rendered
-    this.updateComplete.then(() => {
-      // Select all toolcool-color-picker elements
-      const colorPickers = this.shadowRoot!.querySelectorAll(
-        "toolcool-color-picker"
-      );
-      colorPickers.forEach((picker, i) => {
-        const button = picker.shadowRoot!.querySelector("button");
-
-        button!.title = this.palette.colours[i + 2].name;
-      });
-    });
-  }
-
   render() {
+    if (!this.show) {
+      return html``;
+    }
     return html`
-      <div class="container ${this.show ? "show" : "hide"}">
+      <div class="container">
         <div class="bg" @click=${() => this.toggle()}></div>
         <div class="palette-container">
           <div class="palette">

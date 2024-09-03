@@ -40,10 +40,10 @@
     --background-colour: #e8e8e8;
     --dot-colour: #63636399;
     --overlay-colour: #1b1b1b;
-  
+
     --toggle-colour: #171717;
     --palette-colour: #000000;
-  
+
     --logo-colour: black;
   }
 }
@@ -982,5 +982,56 @@ label img:hover,
 @media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
   .overlayPane {
     flex: 1;
+  }
+}
+
+/* palette-picker */
+
+palette-picker {
+  .container {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .bg {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: #000;
+    opacity: 0.5;
+    cursor: pointer;
+  }
+
+  .palette {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .palette-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    max-width: 50%;
+    background: var(--overlay-colour);
+  }
+
+  button {
+    background: var(--toggle-colour);
+    color: var(--background-colour);
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
   }
 }

@@ -96,6 +96,8 @@ export class ColorPicker extends LitElement {
   @state()
   show: boolean = false;
 
+  clickEvent: ((e: MouseEvent) => void) | undefined;
+
   updateStuff() {
     this.onUpdate();
     this.requestUpdate();
@@ -151,6 +153,17 @@ export class ColorPicker extends LitElement {
 
   toggle() {
     this.show = !this.show;
+    if (this.clickEvent) window.removeEventListener("click", this.clickEvent);
+
+    if (this.show) {
+      window.addEventListener(
+        "click",
+        (this.clickEvent = (e: MouseEvent) => {
+          if (e.target === this) return;
+          this.toggle();
+        })
+      );
+    }
   }
 
   render() {
@@ -167,43 +180,48 @@ export class ColorPicker extends LitElement {
             style="--colour: ${`rgb(${this.palette.r}, ${this.palette.g}, ${this.palette.b})`}"
           ></span>
         </button>
-        ${this.show ? html`<div class="container">
-          <toolcool-color-picker
-            @change=${this.onChangeColor}
-            color=${this.palette.color}
-          ></toolcool-color-picker>
-          <input
-            type="text"
-            @input=${this.onChangeName}
-            .value=${this.palette.name}
-          />
-          <div class="checkboxes">
-            <span>
+        ${this.show
+          ? html`<div class="container">
+              <toolcool-color-picker
+                @change=${this.onChangeColor}
+                color=${this.palette.color}
+              ></toolcool-color-picker>
               <input
-                type="checkbox"
-                @input=${this.onChangeBrush}
-                .checked=${this.palette.brushed}
+                type="text"
+                @input=${this.onChangeName}
+                .value=${this.palette.name}
               />
-              Brushed
-            </span>
-            <span>
-              <input
-                type="checkbox"
-                @input=${this.onChangePlastic}
-                .checked=${this.palette.plastic}
-              />
-              Plastic
-            </span>
-            <span>
-              <input
-                type="checkbox"
-                @input=${this.onChangeShiny}
-                .checked=${this.palette.shiny}
-              />
-              Shiny
-            </span>
-          </div>
-        </div>` : html``}
+              <div class="checkboxes">
+                <span>
+                  <input
+                    type="checkbox"
+                    id="brushed"
+                    @input=${this.onChangeBrush}
+                    .checked=${this.palette.brushed}
+                  />
+                  <label for="brushed">Brushed</label>
+                </span>
+                <span>
+                  <input
+                    type="checkbox"
+                    id="plastic"
+                    @input=${this.onChangePlastic}
+                    .checked=${this.palette.plastic}
+                  />
+                  <label for="plastic">Plastic</label>
+                </span>
+                <span>
+                  <input
+                    type="checkbox"
+                    id="shiny"
+                    @input=${this.onChangeShiny}
+                    .checked=${this.palette.shiny}
+                  />
+                  <label for="shiny">Shiny</label>
+                </span>
+              </div>
+            </div>`
+          : html``}
       </div>
     `;
   }
