@@ -1631,25 +1631,25 @@ function buildOverlays() {
   });
 
   // Facebook
-  nWindow.addObjectToBar({
-    type: "anchor",
-    string: "Facebook",
-    url: "https://www.facebook.com/lairoftheraven/",
-  });
+  // nWindow.addObjectToBar({
+  //   type: "anchor",
+  //   string: "Facebook",
+  //   url: "https://www.facebook.com/lairoftheraven/",
+  // });
 
   // Reddit
-  nWindow.addObjectToBar({
-    type: "anchor",
-    string: "Reddit",
-    url: "https://www.reddit.com/r/lairoftheraven/",
-  });
+  // nWindow.addObjectToBar({
+  //   type: "anchor",
+  //   string: "Reddit",
+  //   url: "https://www.reddit.com/r/lairoftheraven/",
+  // });
 
   // Twitter
-  nWindow.addObjectToBar({
-    type: "anchor",
-    string: "@LairoftheRaven",
-    url: "https://twitter.com/LairoftheRaven",
-  });
+  // nWindow.addObjectToBar({
+  //   type: "anchor",
+  //   string: "@LairoftheRaven",
+  //   url: "https://twitter.com/LairoftheRaven",
+  // });
 
   // Pane
   // Tutorial Video
