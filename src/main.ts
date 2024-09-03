@@ -1034,7 +1034,9 @@ function mouseClickUI(id: string) {
       break;
 
     case "cameraFlip":
-      console.log("This tool has not been implemented.");
+      editorPattern.flip();
+      swatches.generatePatternSwatch(editorPattern);
+      editorLayer.redrawCanvas();
       break;
 
     case "cameraReset":
