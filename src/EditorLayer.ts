@@ -89,12 +89,50 @@ export class EditorLayer {
   }
 
   public drawScales() {
+    this.swatches.regenerateSwatches();
+
     this.context.clearRect(0, 0, this.width, this.height);
-    this.context.drawImage(
-      this.swatches.patternSwatch.canvas,
-      this.offsetX,
-      this.offsetY
-    );
+    this.drawAllScales();
+  }
+
+  drawAllScales() {
+    const pattern = this.editorPattern;
+    const patternHeight = pattern.height;
+    const patternWidth = pattern.width;
+
+    const limit = this.drawUtils.drawEmpty ? 0 : 1;
+
+    for (let y = patternHeight - 1; y >= 0; y--) {
+      const sHalf =
+        pattern.matrix[y][0].colour == 0
+          ? 0 // Odd
+          : this.drawUtils.scaleSpacingX / 2; // Even
+
+      // Add Scale Entity
+      for (let x = 0; x < patternWidth; x++) {
+        if (pattern.matrix[y][x].colour <= limit) {
+          continue;
+        }
+
+        const posX = sHalf + this.drawUtils.scaleSpacingX * x + this.offsetX;
+        const posY = this.drawUtils.scaleSpacingY * y + this.offsetY;
+        const edgeX =
+          posX + this.swatches.scaleSwatches[pattern.matrix[y][x].colour].width;
+        const edgeY =
+          posY +
+          this.swatches.scaleSwatches[pattern.matrix[y][x].colour].height;
+
+        if (posX > this.width || edgeX < 0 || posY > this.height || edgeY < 0) {
+          continue;
+        }
+
+        this.context.drawImage(
+          this.swatches.scaleSwatches[pattern.matrix[y][x].colour].canvas,
+          posX,
+          posY
+        );
+      }
+    }
   }
 
   public drawGrid() {
@@ -180,9 +218,14 @@ export class EditorLayer {
   }
 
   public panCenter() {
-    this.offsetX =
-      this.canvas.width / 2 - this.swatches.patternSwatch.canvas.width / 2;
-    this.offsetY =
-      this.canvas.height / 2 - this.swatches.patternSwatch.canvas.height / 2;
+    const width =
+      this.editorPattern.width * this.drawUtils.scaleSpacingX +
+      this.swatches.scaleSwatches[0].width;
+    const height =
+      (this.editorPattern.height - 1) * this.drawUtils.scaleSpacingY +
+      this.swatches.scaleSwatches[0].height;
+
+    this.offsetX = this.canvas.width / 2 - width / 2;
+    this.offsetY = this.canvas.height / 2 - height / 2;
   }
 }

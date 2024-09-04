@@ -63,7 +63,6 @@ const photoLayer = new EntityLayer(
 const palettePicker = new PalettePicker(palette, swatches, () => {
   createInterface();
   uiLayer.redrawCanvas();
-  swatches.regenerateSwatches(editorPattern);
   editorLayer.redrawCanvas();
 });
 document.body.appendChild(palettePicker);
@@ -78,7 +77,6 @@ const saver = new Saver(
   () => {
     createInterface();
     uiLayer.redrawCanvas();
-    swatches.regenerateSwatches(editorPattern);
     editorLayer.redrawCanvas();
   }
 );
@@ -106,20 +104,10 @@ function calculateScale(
   sourceHeight: number,
   sourceWidth: number
 ) {
-  var scale = 0;
-  var sh = 0;
-  var sw = 0;
-
-  sh = destinationHeight / sourceHeight;
-  sw = destinationWidth / sourceWidth;
-
-  if (sh < sw) {
-    scale = sh;
-  } else {
-    scale = sw;
-  }
-
-  return scale;
+  return Math.min(
+    destinationHeight / sourceHeight,
+    destinationWidth / sourceWidth
+  );
 }
 
 function changeCSS(selector: string, style: string, value: string) {
@@ -188,6 +176,7 @@ function takePhoto() {
   ch = swatches.patternSwatch.canvas.height;
   cw = swatches.patternSwatch.canvas.width;
   photoLayer.scaleCanvas(ch + 100, cw + 50, false);
+  swatches.generatePatternSwatch(editorPattern);
 
   // Fill Layer
   context.fillStyle = getCurrentTheme().backgroundColour;
@@ -592,7 +581,6 @@ function zoomCanvas(scroll: number, mouse?: Pos) {
   }
 
   drawUtils.updateScaleVariables(drawUtils.scaleRadius);
-  swatches.regenerateSwatches(editorPattern);
 }
 
 function zoomCanvasMouse(event: WheelEvent) {
@@ -621,6 +609,7 @@ function zoomExtents(sourcePattern: PatternMatrix) {
   }
 
   zoomCanvas(1);
+  swatches.regenerateSwatches();
   editorLayer.panCenter();
   editorLayer.redrawCanvas();
 }
@@ -628,6 +617,9 @@ function zoomExtents(sourcePattern: PatternMatrix) {
 function zoomReset() {
   drawUtils.scaleRadius = 75;
   zoomCanvas(0);
+  swatches.regenerateSwatches();
+  editorLayer.panCenter();
+  editorLayer.redrawCanvas();
 }
 
 // Mouse Functions ====================================================================================================
@@ -918,7 +910,6 @@ function mouseDownEditor(y: number, x: number, b: number) {
       case "toolboxCursor":
       case "toolboxBrush":
         editorPattern.colourScale(y, x, activeColour, editorLayer);
-        swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
 
         break;
@@ -929,20 +920,17 @@ function mouseDownEditor(y: number, x: number, b: number) {
       //case "toolboxColumnPaste":
       case "toolboxFillRow":
         editorPattern.fillRow(y, activeColour);
-        swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
 
         break;
       case "toolboxFillColumn":
         editorPattern.fillColumn(x, y, activeColour);
-        swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
 
         break;
       case "toolboxFillColour":
         editorPattern.fill(y, x, activeColour);
         editorPattern.colourScale(y, x, activeColour);
-        swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
 
         break;
@@ -952,7 +940,6 @@ function mouseDownEditor(y: number, x: number, b: number) {
       //case "toolboxRowPaste":
       case "toolboxReplace":
         editorPattern.replaceAll(editorPattern.getColour(y, x), activeColour);
-        swatches.generatePatternSwatch(editorPattern);
         editorLayer.redrawCanvas();
 
         break;
@@ -979,7 +966,6 @@ function mouseHoverEditor(y: number, x: number, b: number) {
         setCursor("Brush");
         if (clicked) {
           editorPattern.colourScale(y, x, activeColour, editorLayer);
-          swatches.generatePatternSwatch(editorPattern);
           editorLayer.redrawCanvas();
         }
         break;
@@ -1035,14 +1021,11 @@ function mouseClickUI(id: string) {
 
     case "cameraFlip":
       editorPattern.flip();
-      swatches.generatePatternSwatch(editorPattern);
       editorLayer.redrawCanvas();
       break;
 
     case "cameraReset":
       zoomReset();
-      editorLayer.panCenter();
-      editorLayer.redrawCanvas();
       break;
 
     case "cameraPhoto":
@@ -1795,7 +1778,6 @@ function newFromShape() {
   createInterface();
   uiLayer.redrawCanvas();
   overlayInterface.hideOverlay();
-  swatches.generatePatternSwatch(editorPattern);
   editorLayer.redrawCanvas();
 }
 
@@ -1898,7 +1880,6 @@ function toggleEmpty() {
     drawUtils.drawEmpty = true;
   }
 
-  swatches.regenerateSwatches(editorPattern);
   editorLayer.redrawCanvas();
 }
 
@@ -2466,8 +2447,6 @@ function startDesigner() {
 
   // Templates
   splashText.innerHTML = "Generating swatches...";
-
-  swatches.regenerateSwatches(editorPattern);
 
   // Editor
   editorLayer.redrawCanvas();

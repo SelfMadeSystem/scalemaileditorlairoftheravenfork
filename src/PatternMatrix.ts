@@ -17,8 +17,6 @@ export class PatternMatrix implements SaveData {
       matrix: this.matrix.map((x) => x.map((y) => y.saveTo())),
       height: this.height,
       width: this.width,
-      physicalHeight: this.physicalHeight,
-      physicalWidth: this.physicalWidth,
     };
   }
 
@@ -42,18 +40,6 @@ export class PatternMatrix implements SaveData {
 
     if (typeof data.width === "number") {
       this.width = data.width;
-    } else {
-      console.warn("Invalid Matrix Data:", data);
-    }
-
-    if (typeof data.physicalHeight === "number") {
-      this.physicalHeight = data.physicalHeight;
-    } else {
-      console.warn("Invalid Matrix Data:", data);
-    }
-
-    if (typeof data.physicalWidth === "number") {
-      this.physicalWidth = data.physicalWidth;
     } else {
       console.warn("Invalid Matrix Data:", data);
     }
@@ -90,42 +76,6 @@ export class PatternMatrix implements SaveData {
     // Store Matrix Size
     this.height = this.matrix.length;
     this.width = this.matrix[0].length;
-
-    // Calculate Physical Size
-    if (this.height > 0 && this.width > 0) {
-      // Find corners
-      var firstRow = this.findFirstColour("row", 1);
-      var lastRow = this.findFirstColour("row", 0);
-
-      var firstCol = this.findFirstColour("col", 1);
-      var lastCol = this.findFirstColour("col", 0);
-
-      // Determine Physical Size of Pattern
-      if (firstRow && firstCol && lastRow && lastCol) {
-        // Calculate Physical Size
-        this.physicalHeight = lastRow[0] - firstRow[0];
-        this.physicalWidth = lastCol[1] - firstCol[1];
-
-        if (
-          this.matrix[firstCol[0]][0].colour == 0 ||
-          this.matrix[this.height - 1 - lastCol[0]][0].colour == 0
-        ) {
-          this.physicalWidth -= 0.5;
-        }
-
-        // if (firstRow[0] === false && lastRow[0] === false) {
-        //   this.physicalHeight = 0;
-        // } else {
-        this.physicalHeight += 1;
-        // }
-
-        // if (firstCol[1] === false && lastCol[1] === false) {
-        //   this.physicalWidth = 0;
-        // } else {
-        this.physicalWidth += 1;
-        // }
-      }
-    }
   }
 
   findFirstColour(mode: "col" | "row", direction: 0 | 1 = 1) {

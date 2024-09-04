@@ -32,11 +32,10 @@ export class TemplateSwatches {
     swt.canvas.style.width = width + "px";
   }
 
-  regenerateSwatches(pattern: PatternMatrix) {
+  regenerateSwatches() {
     this.generateGradientSwatches();
     this.generateTextureSwatches();
     this.generateScaleSwatches();
-    this.generatePatternSwatch(pattern);
   }
 
   /* Pattern Functions */
@@ -56,16 +55,13 @@ export class TemplateSwatches {
 
     var sHalf = 0;
 
-    var x = 0;
-    var y = 0;
-
     var limit = 0;
 
     if (this.drawUtils.drawEmpty === false) {
       limit = 1;
     }
 
-    for (y = patternHeight - 1; y >= 0; y--) {
+    for (let y = patternHeight - 1; y >= 0; y--) {
       if (pattern.matrix[y][0].colour == 0) {
         // Odd
         sHalf = 0;
@@ -75,14 +71,19 @@ export class TemplateSwatches {
       }
 
       // Add Scale Entity
-      for (x = 0; x < patternWidth; x++) {
-        if (pattern.matrix[y][x].colour > limit) {
-          this.patternSwatch.context.drawImage(
-            this.scaleSwatches[pattern.matrix[y][x].colour].canvas,
-            sHalf + this.drawUtils.scaleSpacingX * x,
-            this.drawUtils.scaleSpacingY * y
-          );
+      for (let x = 0; x < patternWidth; x++) {
+        if (pattern.matrix[y][x].colour <= limit) {
+          continue;
         }
+
+        const posX = sHalf + this.drawUtils.scaleSpacingX * x;
+        const posY = this.drawUtils.scaleSpacingY * y;
+
+        this.patternSwatch.context.drawImage(
+          this.scaleSwatches[pattern.matrix[y][x].colour].canvas,
+          posX,
+          posY
+        );
       }
     }
   }
