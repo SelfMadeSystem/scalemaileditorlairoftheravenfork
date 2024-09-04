@@ -173,10 +173,10 @@ function takePhoto() {
   zoomReset();
 
   // Scale to Pattern Size
+  swatches.generatePatternSwatch(editorPattern);
   ch = swatches.patternSwatch.canvas.height;
   cw = swatches.patternSwatch.canvas.width;
   photoLayer.scaleCanvas(ch + 100, cw + 50, false);
-  swatches.generatePatternSwatch(editorPattern);
 
   // Fill Layer
   context.fillStyle = getCurrentTheme().backgroundColour;
