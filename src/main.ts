@@ -1053,16 +1053,6 @@ function mouseClickUI(id: string) {
       uiLayer.redrawCanvas();
       break;
 
-    case "toolboxKickstarter":
-      //setOverlay("kickstarter");
-      //overlay.showOverlay();
-
-      window.open(
-        "https://www.kickstarter.com/projects/r3dmm/scalemail-wall-banners?ref=8rzc9b",
-        "_blank"
-      );
-      break;
-
     case "toolboxNew":
       setOverlay("new");
       overlayInterface.showOverlay();
@@ -1945,16 +1935,6 @@ function setupCameraButtons() {
 
   uiCamera.addButton(nEnt);
 
-  // Kickstarter
-  nEnt = new UiButton();
-
-  nEnt.name = "toolboxKickstarter";
-
-  nEnt.icon = "iconKickstarter";
-  nEnt.tiptext = "Kickstarter Supporters";
-
-  uiCamera.addButton(nEnt);
-
   // Help
   nEnt = new UiButton();
 
@@ -2154,7 +2134,8 @@ function setupToolboxButtons() {
 
   uiToolbox.addButton(pEnt);
 
-  // Row
+  // TODO: Add row and column tools
+  /* // Row
   pEnt = new UiButton();
 
   pEnt.name = "toolboxRow";
@@ -2213,9 +2194,9 @@ function setupToolboxButtons() {
 
   pEnt.expandable = true;
 
-  uiToolbox.addButton(pEnt);
+  uiToolbox.addButton(pEnt); */
 
-  // Column
+  /* // Column
   pEnt = new UiButton();
 
   pEnt.name = "toolboxColumn";
@@ -2277,7 +2258,7 @@ function setupToolboxButtons() {
 
   pEnt.expandable = true;
 
-  uiToolbox.addButton(pEnt);
+  uiToolbox.addButton(pEnt); */
 
   // Replace
   pEnt = new UiButton();
