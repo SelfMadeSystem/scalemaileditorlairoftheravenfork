@@ -1636,6 +1636,8 @@ function buildOverlays() {
     title: "Tutorial Playlist",
     string: [
       "Need help using the inlay designer? Check out our video tutorial series on YouTube for a detailed breakdown!",
+      `Note: this series was made in 2017 and only covers the original version of the inlay designer.
+      The series does not cover any of the additions, improvements or new features of the fork.`,
     ],
   });
 
