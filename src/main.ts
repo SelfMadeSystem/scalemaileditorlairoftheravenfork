@@ -1033,16 +1033,18 @@ function mouseClickUI(id: string) {
       break;
 
     case "cameraZoomIn":
-      zoomCanvas(-100);
-      swatches.regenerateSwatches();
-      editorLayer.panCenter();
+      zoomCanvas(-100, {
+        x: editorLayer.canvas.width / 2,
+        y: editorLayer.canvas.height / 2,
+      });
       editorLayer.redrawCanvas();
       break;
 
     case "cameraZoomOut":
-      zoomCanvas(100);
-      swatches.regenerateSwatches();
-      editorLayer.panCenter();
+      zoomCanvas(100, {
+        x: editorLayer.canvas.width / 2,
+        y: editorLayer.canvas.height / 2,
+      });
       editorLayer.redrawCanvas();
       break;
 
