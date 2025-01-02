@@ -33,11 +33,11 @@ export class ColourPalette implements SaveData {
   }
 
   isShiny(colour: number) {
-    return this.colours[colour].shiny === true;
+    return this.colours[colour].shiny;
   }
 
   isBrushed(colour: number) {
-    return this.colours[colour].brushed === true;
+    return this.colours[colour].brushed;
   }
 
   matchRGBA(r: number, g: number, b: number, a: number) {

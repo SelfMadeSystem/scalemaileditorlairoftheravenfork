@@ -23,7 +23,7 @@ export class Scale implements SaveData {
   setColour(colour: number) {
     // if (colour === undefined) colour = false;
 
-    // if (colour === false) {
+    // if (!colour) {
     //   this.colour = activeColour;
     // } else {
     this.colour = colour;

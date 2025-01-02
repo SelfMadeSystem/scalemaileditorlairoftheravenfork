@@ -191,14 +191,14 @@ export function makeOverlayPane(
 
         // tmp = "<label for='" + object.id + "'>" + tmp + "</label>";
 
-        // if (object.checked === true) {
+        // if (object.checked) {
         //   n = "checked ";
         // } else {
         //   n = "";
         // }
 
         // content += "<div class='inputDIV'>";
-        // if (object.src === false) {
+        // if (!object.src) {
         //   content += tmp;
         // }
 
@@ -238,7 +238,7 @@ export function makeOverlayPane(
           input.classList.add("hidden");
         }
 
-        if (object.checked === true) {
+        if (object.checked) {
           input.checked = true;
         }
         div.appendChild(input);

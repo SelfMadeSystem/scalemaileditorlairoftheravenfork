@@ -19,13 +19,13 @@ export class UiSection {
     let oy = 0;
 
     // Configure Origin
-    if (this.alignRight === true) {
+    if (this.alignRight) {
       ox = target.width - uiOffsetX - uiIconSize;
     } else {
       ox = uiOffsetX;
     }
 
-    if (this.alignBottom === true) {
+    if (this.alignBottom) {
       oy = target.height - uiOffsetX - uiIconSize;
     } else {
       oy = uiOffsetY;
@@ -33,7 +33,7 @@ export class UiSection {
 
     // Create Entities
     for (let x = 0; x < this.buttons.length; x++) {
-      if (this.buttons[x].pregap === true) {
+      if (this.buttons[x].pregap) {
         sx += uiIconSize;
       }
 
@@ -45,10 +45,7 @@ export class UiSection {
         )
       );
 
-      if (
-        this.buttons[x].expandable === true &&
-        this.buttons[x].expanded === true
-      ) {
+      if (this.buttons[x].expandable && this.buttons[x].expanded) {
         for (let z = 0; z < this.buttons[x].subbuttons.length; z++) {
           if (this.buttons[x].subbuttons[z].name == currentTool) {
             this.buttons[x].selected = z;

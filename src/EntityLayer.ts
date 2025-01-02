@@ -69,7 +69,7 @@ export class EntityLayer {
     width = window.innerWidth,
     minimum = true
   ) {
-    if (minimum === true) {
+    if (minimum) {
       if (height < 600) {
         height = 600;
       }
@@ -122,7 +122,7 @@ export class EntityLayer {
       var z = 1;
 
       // Set Write Direction
-      if (this.reverse === true) {
+      if (this.reverse) {
         x = y - 1;
         y = 0;
         z = -1;
@@ -178,7 +178,7 @@ export class EntityLayer {
       }
 
       // Draw Tooltip
-      if (this.tooltip === true) {
+      if (this.tooltip) {
         this.drawUtils.drawTooltip(
           this.context,
           this.tooltipX,

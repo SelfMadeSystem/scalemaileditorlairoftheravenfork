@@ -558,7 +558,7 @@ function zoomCanvas(scroll: number, mouse?: Pos) {
   const scrollSpeed = scroll;
   const zoomFactor = 1.1;
   const minScale = 15;
-  const maxScale = 150;
+  const maxScale = 300;
 
   const ogZoom = drawUtils.scaleRadius;
 
@@ -625,16 +625,24 @@ function zoomReset() {
 // Mouse Functions ====================================================================================================
 // Canvas Mouse Interactions
 function mouseHandler(event: MouseEvent) {
-  var mouseX = event.pageX;
-  var mouseY = event.pageY;
+  const mouseX = event.pageX;
+  const mouseY = event.pageY;
 
-  var uiRedraw = false;
-  var uiChange = false;
+  let uiRedraw = false;
+  let uiChange = false;
 
-  if (panMouse === false && panKey === false) {
+  if (!panMouse && !panKey) {
+    const testEvent = {
+      mouseX,
+      mouseY,
+      type: event.type,
+    };
+    if (testEvent.type === "mousemove") {
+      testEvent.type = "move";
+    }
     // Check UI Elements
     for (let x = uiLayer.entities.length - 1; x > -1; x--) {
-      if (mouseInteraction(event, uiLayer.entities[x]) === true) {
+      if (mouseInteraction(testEvent, uiLayer.entities[x])) {
         switch (event.type) {
           case "mousedown":
             mouseClickUI(uiLayer.entities[x].id);
@@ -647,7 +655,7 @@ function mouseHandler(event: MouseEvent) {
             const tooltipText = uiLayer.entities[x].tooltipText;
             if (
               tooltipText !== undefined &&
-              uiLayer.entities[x].tooltip === true &&
+              uiLayer.entities[x].tooltip &&
               tooltipText != uiLayer.tooltipText
             ) {
               var flipTooltip = false;
@@ -670,7 +678,7 @@ function mouseHandler(event: MouseEvent) {
             if (obj) {
               if (uiLayer.expanded !== undefined) {
                 if (uiLayer.expanded.group != obj.group) {
-                  if (obj.expandable === true) {
+                  if (obj.expandable) {
                     uiLayer.expanded.expanded = false;
                     uiLayer.expanded = obj;
                     obj.expanded = true;
@@ -682,7 +690,7 @@ function mouseHandler(event: MouseEvent) {
                   }
                 }
               } else {
-                if (obj.expandable === true) {
+                if (obj.expandable) {
                   uiLayer.expanded = obj;
                   obj.expanded = true;
                   uiChange = true;
@@ -693,12 +701,12 @@ function mouseHandler(event: MouseEvent) {
             break;
         }
 
-        if (uiChange === true) {
+        if (uiChange) {
           createInterface();
           uiRedraw = true;
         }
 
-        if (uiRedraw === true) {
+        if (uiRedraw) {
           uiLayer.redrawCanvas();
         }
 
@@ -756,7 +764,7 @@ function mouseHandler(event: MouseEvent) {
               pxY > windowEdgeT &&
               pxY < windowEdgeB
             ) {
-              if (isMouseOnScale(mouseX, mouseY, pxX, pxY) === true) {
+              if (isMouseOnScale(mouseX, mouseY, pxX, pxY)) {
                 switch (event.type) {
                   case "mousedown":
                     mouseDownEditor(y, x, event.which);
@@ -791,7 +799,7 @@ function mouseHandler(event: MouseEvent) {
       break;
 
     case "mousemove":
-      if (panMouse === true) {
+      if (panMouse) {
         editorLayer.panCanvas(
           event.pageX - panCenterX,
           event.pageY - panCenterY
@@ -817,11 +825,266 @@ function mouseHandler(event: MouseEvent) {
   return true;
 }
 
+let prevCenterX = 0;
+let prevCenterY = 0;
+let prevRadius = 0;
+let prevTouchCount = 0;
+
+function touchHandler(event: TouchEvent) {
+  if (event.touches.length > 1) {
+    const touches = Array.from(event.touches);
+
+    let centerX = 0;
+    let centerY = 0;
+
+    for (const touch of touches) {
+      centerX += touch.pageX;
+      centerY += touch.pageY;
+    }
+
+    centerX /= touches.length;
+    centerY /= touches.length;
+
+    let radius = 0;
+
+    for (const touch of touches) {
+      radius += Math.sqrt(
+        (centerX - touch.pageX) ** 2 + (centerY - touch.pageY) ** 2
+      );
+    }
+
+    radius /= touches.length;
+
+    if (
+      prevCenterX &&
+      prevCenterY &&
+      prevRadius &&
+      touches.length === prevTouchCount
+    ) {
+      const deltaX = centerX - prevCenterX;
+      const deltaY = centerY - prevCenterY;
+      const delta = radius - prevRadius;
+      zoomCanvas(-delta * 5, {
+        x: centerX,
+        y: centerY,
+      });
+      editorLayer.panCanvas(deltaX, deltaY);
+      editorLayer.redrawCanvas();
+    }
+
+    prevCenterX = centerX;
+    prevCenterY = centerY;
+    prevRadius = radius;
+    prevTouchCount = touches.length;
+    return;
+  } else {
+    prevCenterX = 0;
+    prevCenterY = 0;
+    prevRadius = 0;
+    prevTouchCount = 0;
+  }
+
+  const touch = event.touches[0];
+  const touchX = touch?.pageX ?? 0;
+  const touchY = touch?.pageY ?? 0;
+  event.preventDefault();
+
+  let uiRedraw = false;
+  let uiChange = false;
+
+  if (!panMouse && !panKey) {
+    // Check UI Elements
+    for (let x = uiLayer.entities.length - 1; x > -1; x--) {
+      const testEvent = {
+        mouseX: touchX,
+        mouseY: touchY,
+        type: event.type,
+      };
+      if (testEvent.type === "touchmove") {
+        testEvent.type = "move";
+      }
+      if (mouseInteraction(testEvent, uiLayer.entities[x])) {
+        switch (event.type) {
+          case "touchstart":
+            mouseClickUI(uiLayer.entities[x].id);
+            break;
+
+          case "touchmove":
+            setCursor("Pointer");
+            // Tooltip
+            // TODO: Refactor; this is messy
+            const tooltipText = uiLayer.entities[x].tooltipText;
+            if (
+              tooltipText !== undefined &&
+              uiLayer.entities[x].tooltip &&
+              tooltipText != uiLayer.tooltipText
+            ) {
+              var flipTooltip = false;
+
+              if (touchX > uiLayer.width / 2) {
+                flipTooltip = true;
+              }
+
+              uiLayer.setTooltip(
+                uiLayer.entities[x].originX + uiLayer.entities[x].width,
+                uiLayer.entities[x].originY + uiLayer.entities[x].height / 2,
+                tooltipText,
+                flipTooltip
+              );
+              uiRedraw = true;
+            }
+
+            // Expanding
+            const obj = uiLayer.entities[x].object;
+            if (obj) {
+              if (uiLayer.expanded !== undefined) {
+                if (uiLayer.expanded.group != obj.group) {
+                  if (obj.expandable) {
+                    uiLayer.expanded.expanded = false;
+                    uiLayer.expanded = obj;
+                    obj.expanded = true;
+                    uiChange = true;
+                  } else {
+                    uiLayer.expanded.expanded = false;
+                    uiLayer.expanded = undefined;
+                    uiChange = true;
+                  }
+                }
+              } else {
+                if (obj.expandable) {
+                  uiLayer.expanded = obj;
+                  obj.expanded = true;
+                  uiChange = true;
+                }
+              }
+            }
+
+            break;
+        }
+
+        if (uiChange) {
+          createInterface();
+          uiRedraw = true;
+        }
+
+        if (uiRedraw) {
+          uiLayer.redrawCanvas();
+        }
+
+        return true;
+      }
+    }
+
+    if (uiLayer.expanded !== undefined) {
+      uiLayer.expanded.expanded = false;
+      uiLayer.expanded = undefined;
+      createInterface();
+    }
+
+    if (uiLayer.tooltip !== false) {
+      uiLayer.clearTooltip();
+      uiLayer.redrawCanvas();
+    }
+
+    // Check Editor Elements
+    if (currentTool != "cameraPan") {
+      const patternHeight = editorPattern.height;
+      const patternWidth = editorPattern.width;
+      const canvasX = Math.round(editorLayer.offsetX);
+      const canvasY = Math.round(editorLayer.offsetY);
+
+      var sHalf = 0;
+
+      var windowEdgeL = 0 - drawUtils.scaleWidth;
+      var windowEdgeR = window.innerWidth + drawUtils.scaleWidth;
+      var windowEdgeT = 0 - drawUtils.scaleHeight;
+      var windowEdgeB = window.innerWidth + drawUtils.scaleHeight;
+
+      for (let y = 0; y < patternHeight; y++) {
+        for (let x = 0; x < patternWidth; x++) {
+          if (x > 0 || editorPattern.matrix[y][x].colour > 0) {
+            // Even-Odd Spacing
+            if (editorPattern.matrix[y][0].colour == 0) {
+              // Odd
+              sHalf = 0;
+            } else {
+              // Even
+              sHalf = drawUtils.scaleSpacingX / 2;
+            }
+
+            // Test
+            const scaleX = Math.round(sHalf + drawUtils.scaleSpacingX * x);
+            const scaleY = Math.round(drawUtils.scaleSpacingY * y);
+
+            const pxX = canvasX + scaleX;
+            const pxY = canvasY + scaleY;
+
+            if (
+              pxX > windowEdgeL &&
+              pxX < windowEdgeR &&
+              pxY > windowEdgeT &&
+              pxY < windowEdgeB
+            ) {
+              if (isMouseOnScale(touchX, touchY, pxX, pxY)) {
+                switch (event.type) {
+                  case "touchstart":
+                    mouseDownEditor(y, x, 1);
+                    break;
+                  case "touchend":
+                    mouseUpEditor(y, x, 0);
+                    break;
+
+                  case "touchmove":
+                    mouseHoverEditor(y, x, 1);
+                    break;
+                }
+
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Mouse is on Background
+  switch (event.type) {
+    case "touchstart":
+      setCursor("Grabbing");
+
+      panCenterX = touchX;
+      panCenterY = touchY;
+      panMouse = true;
+
+      break;
+
+    case "touchmove":
+      if (panMouse) {
+        editorLayer.panCanvas(touchX - panCenterX, touchY - panCenterY);
+        editorLayer.redrawCanvas();
+
+        panCenterX = touchX;
+        panCenterY = touchY;
+      } else {
+        setCursor("Grab");
+      }
+
+      break;
+
+    case "touchend":
+      setCursor("Grab");
+      panMouse = false;
+
+      break;
+  }
+}
+
 function keyHandler(event: KeyboardEvent) {
   switch (event.key) {
     case "Shift": {
       if (event.type == "keydown") {
-        if (panMouse === false) {
+        if (!panMouse) {
           setCursor("Grab");
         }
 
@@ -832,14 +1095,14 @@ function keyHandler(event: KeyboardEvent) {
       break;
     }
     case "s": {
-      if (event.type == "keydown" && event.ctrlKey === true) {
+      if (event.type == "keydown" && event.ctrlKey) {
         saver.saveToLocalStorage();
         event.preventDefault();
       }
       break;
     }
     case "Escape": {
-      if (event.type == "keydown" && event.ctrlKey === true) {
+      if (event.type == "keydown" && event.ctrlKey) {
         saver.clearLocalStorage();
         window.location.reload();
       }
@@ -848,15 +1111,23 @@ function keyHandler(event: KeyboardEvent) {
   }
 }
 
-function mouseInteraction(event: MouseEvent, entity: Entity) {
-  var mouseX = event.pageX;
-  var mouseY = event.pageY;
-
+function mouseInteraction(
+  {
+    mouseX,
+    mouseY,
+    type,
+  }: {
+    mouseX: number;
+    mouseY: number;
+    type: "click" | "move" | string;
+  },
+  entity: Entity
+) {
   if (entity.mouse !== true) {
     return false;
   }
 
-  switch (event.type) {
+  switch (type) {
     case "click":
       if (entity.mouseClick !== true) {
         return false;
@@ -864,7 +1135,7 @@ function mouseInteraction(event: MouseEvent, entity: Entity) {
 
       break;
 
-    case "mousemove":
+    case "move":
       if (entity.mouseHover !== true) {
         return false;
       }
@@ -1095,7 +1366,7 @@ function mouseClickUI(id: string) {
     case "toolboxSettings":
       setOverlay("settings");
 
-      if (drawUtils.drawEmpty === true) {
+      if (drawUtils.drawEmpty) {
         (document.getElementById("toggleEmpty") as HTMLInputElement).checked =
           true;
       }
@@ -1105,7 +1376,7 @@ function mouseClickUI(id: string) {
           true;
       }
 
-      if (editorLayer.doDrawGrid === true) {
+      if (editorLayer.doDrawGrid) {
         (document.getElementById("toggleGrid") as HTMLInputElement).checked =
           true;
       }
@@ -1870,7 +2141,7 @@ function patternShapeDiamond(target: PatternMatrix, colour: number) {
 
 // Toggle Settings ====================================================================================================
 function toggleEmpty() {
-  if (drawUtils.drawEmpty === true) {
+  if (drawUtils.drawEmpty) {
     drawUtils.drawEmpty = false;
   } else {
     drawUtils.drawEmpty = true;
@@ -2457,6 +2728,9 @@ function startDesigner() {
   interactionLayer.addEventListener("mousedown", mouseHandler);
   interactionLayer.addEventListener("mouseleave", mouseHandler);
   interactionLayer.addEventListener("mouseup", mouseHandler);
+  interactionLayer.addEventListener("touchstart", touchHandler);
+  interactionLayer.addEventListener("touchmove", touchHandler);
+  interactionLayer.addEventListener("touchend", touchHandler);
   interactionLayer.addEventListener("wheel", zoomCanvasMouse);
 
   document.addEventListener("keydown", keyHandler);

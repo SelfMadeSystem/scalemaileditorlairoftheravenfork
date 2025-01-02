@@ -122,7 +122,7 @@ export class DrawUtils {
     context.fill();
 
     // Brush
-    if (entity.fillPalette?.brushed === true) {
+    if (entity.fillPalette?.brushed) {
       this.drawRect(context, entity, offsetX, offsetY);
       context.globalCompositeOperation = "overlay";
       context.fillStyle = swatches.textureSwatches[1].pattern ?? "#f00";
@@ -146,11 +146,11 @@ export class DrawUtils {
     );
     context.closePath();
 
-    if (entity.stroke === true) {
+    if (entity.stroke) {
       this.shapeStroke(context, entity.strokeColour, entity.strokeWeight);
     }
 
-    if (entity.fill === true) {
+    if (entity.fill) {
       this.shapeFill(context, entity.fillColour, entity.fillOrder);
     }
   }
@@ -225,7 +225,7 @@ export class DrawUtils {
     var shadow = 3;
     var shadowOff = 3;
 
-    if (tipFlip === true) {
+    if (tipFlip) {
       boxX = originX - uiIconSize - textPadding - textWidth - textHeight * 2;
       triA = textWidth + textPadding + textHeight * 2;
       triB = textWidth + textPadding + textHeight;

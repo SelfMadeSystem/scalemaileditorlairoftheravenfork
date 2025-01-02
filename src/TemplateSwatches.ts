@@ -57,7 +57,7 @@ export class TemplateSwatches {
 
     var limit = 0;
 
-    if (this.drawUtils.drawEmpty === false) {
+    if (!this.drawUtils.drawEmpty) {
       limit = 1;
     }
 
@@ -145,8 +145,8 @@ export class TemplateSwatches {
       swatch.context.shadowOffsetY = 0;
 
       // Brush Texture
-      if (plastic === false) {
-        if (brushed === true) {
+      if (!plastic) {
+        if (brushed) {
           v = 1;
         }
 
@@ -162,7 +162,7 @@ export class TemplateSwatches {
       }
 
       // Sheen Gradient
-      if (mirror === true) {
+      if (mirror) {
         z = 1;
       }
 

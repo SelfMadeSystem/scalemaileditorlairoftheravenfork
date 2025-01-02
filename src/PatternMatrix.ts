@@ -257,7 +257,7 @@ export class PatternMatrix implements SaveData {
       inset = true;
     }
 
-    if (inset === true) {
+    if (inset) {
       this.matrix[row][0].colour = 0;
     }
   }
@@ -313,7 +313,10 @@ export class PatternMatrix implements SaveData {
   flip() {
     for (let x = 0; x < this.matrix.length; x++) {
       if (this.matrix[x][0].colour == 0) {
-        this.matrix[x] = [this.matrix[x][0], ...this.matrix[x].slice(1).reverse()];
+        this.matrix[x] = [
+          this.matrix[x][0],
+          ...this.matrix[x].slice(1).reverse(),
+        ];
       } else {
         this.matrix[x] = this.matrix[x].reverse();
       }

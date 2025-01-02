@@ -47,7 +47,7 @@ export class EditorLayer {
     width = window.innerWidth,
     minimum = true
   ) {
-    if (minimum === true) {
+    if (minimum) {
       if (height < 600) {
         height = 600;
       }
